@@ -2,7 +2,7 @@
     PHÚ ROBLOX HUB
     itipati! Primeval Earth | Dinosaur
     Auto Kill + Auto Ownership Area + Auto Eat + Speed + Jump + ESP + Hop + Hitbox
-    Mobile Optimized + Logo Toggle
+    Mobile + PC (Potassium) Support
 ]]
 
 local Players = game:GetService("Players")
@@ -18,7 +18,51 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 local PlaceId = game.PlaceId
+local IS_PC = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
+local IS_MOBILE = UserInputService.TouchEnabled
 
+-- Hỗ trợ executor: Potassium, Delta, Xeno, Solara, v.v...
+local IS_POTASSIUM = (type(identifyexecutor) == "function" and identifyexecutor():lower():find("potassium")) and true or false
+local EXECUTOR_NAME = "Unknown"
+pcall(function()
+    if type(identifyexecutor) == "function" then
+        EXECUTOR_NAME = identifyexecutor()
+    end
+end)
+
+-- Safe wrappers
+local function safeFireProximityPrompt(prompt)
+    if type(fireproximityprompt) == "function" then
+        pcall(fireproximityprompt, prompt)
+    end
+end
+
+local function safeFireTouch(a, b, state)
+    if type(firetouchinterest) == "function" then
+        pcall(firetouchinterest, a, b, state)
+    end
+end
+
+local function safeFireClick(detector)
+    if type(fireclickdetector) == "function" then
+        pcall(fireclickdetector, detector)
+    end
+end
+
+local function safeHttpGet(url)
+    if type(game.HttpGet) == "function" then
+        return game:HttpGet(url)
+    end
+    if type(httpget) == "function" then
+        return httpget(url)
+    end
+    if type(request) == "function" then
+        return request({Url = url, Method = "GET"}).Body
+    end
+    return nil
+end
+
+-- Cleanup UI cũ
 for _, name in ipairs({"PrimevalEarth_UI", "PhuRobloxHub"}) do
     local old = PlayerGui:FindFirstChild(name)
     if old then old:Destroy() end
@@ -168,9 +212,9 @@ local SubTitle = Instance.new("TextLabel")
 SubTitle.Size = UDim2.new(1, -170, 0, 25)
 SubTitle.Position = UDim2.fromOffset(72, 39)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "Primeval Earth | Dinosaur • Mobile"
+SubTitle.Text = "Primeval Earth | Dinosaur • " .. (IS_PC and "PC" or "Mobile") .. " (" .. EXECUTOR_NAME .. ")"
 SubTitle.TextColor3 = Color3.fromRGB(145, 155, 158)
-SubTitle.TextSize = 14
+SubTitle.TextSize = 13
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.Parent = Header
@@ -201,32 +245,41 @@ Minimize.Font = Enum.Font.Gotham
 Minimize.Parent = Header
 
 --==================================================
--- DRAG
+-- DRAG (Mouse + Touch)
 --==================================================
 
 local dragging = false
 local dragStart
 local startPos
 
+local function startDrag(input)
+    dragging = true
+    dragStart = input.Position
+    startPos = Main.Position
+end
+
+local function updateDrag(input)
+    if not dragging then return end
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch
     or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
+        startDrag(input)
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.Touch
     or input.UserInputType == Enum.UserInputType.MouseMovement) then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        updateDrag(input)
     end
 end)
 
@@ -234,6 +287,16 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch
     or input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
+    end
+end)
+
+-- PC: RightControl hoặc K để bật/tắt menu
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.RightControl
+    or input.KeyCode == Enum.KeyCode.K then
+        Main.Visible = not Main.Visible
+        LogoToggle.Visible = not Main.Visible
     end
 end)
 
@@ -477,20 +540,23 @@ local function createSlider(parent, title, min, max, default, callback)
     end
 
     Bar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
             draggingBar = true
             handleInput(input)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if draggingBar and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if draggingBar and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
             handleInput(input)
         end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
             draggingBar = false
         end
     end)
@@ -519,7 +585,6 @@ createToggleRow(mainPage, "Auto Eat", "Tele tới Meat + Eat", false, "Auto Eat"
 local speedValue = 50
 local jumpValue = 120
 local hitboxSize = 5
-local hitboxEnabled = false
 
 createToggleRow(playerPage, "Speed Enabled", "Auto apply WalkSpeed (fix underwater)", false, "Speed Enabled")
 createToggleRow(playerPage, "Jump Enabled", "Auto apply JumpPower", false, "Jump Enabled")
@@ -661,8 +726,11 @@ local function GetServers()
             url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
         end
 
+        local body = safeHttpGet(url)
+        if not body then break end
+
         local success, data = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
+            return HttpService:JSONDecode(body)
         end)
 
         if not success or not data or not data.data then
@@ -934,7 +1002,7 @@ end)
 -- HITBOX PLAYER
 --==================================================
 
-local hitboxData = {} -- [player] = hitbox part
+local hitboxData = {}
 
 local function removeHitbox(plr)
     local hb = hitboxData[plr]
@@ -980,18 +1048,6 @@ local function removeAllHitboxes()
     end
 end
 
-local function refreshAllHitboxes()
-    for plr, hb in pairs(hitboxData) do
-        if hb and hb.Parent then
-            hb.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-        end
-    end
-end
-
--- Update hitbox size realtime khi slider đổi
-local hitboxSliderRef = nil
-
--- Loop update hitbox theo toggle
 spawn(function()
     while true do
         task.wait(0.2)
@@ -1001,7 +1057,6 @@ spawn(function()
                     createHitbox(plr)
                 end
             end
-            -- Update size realtime
             for _, hb in pairs(hitboxData) do
                 if hb and hb.Parent then
                     hb.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
@@ -1013,7 +1068,6 @@ spawn(function()
     end
 end)
 
--- Tạo hitbox khi player mới vào (nếu bật)
 Players.PlayerAdded:Connect(function(plr)
     plr.CharacterAdded:Connect(function(char)
         char:WaitForChild("HumanoidRootPart", 5)
@@ -1405,7 +1459,7 @@ end
 
 local function triggerPrompt(prompt)
     if not prompt or not prompt.Parent then return end
-    pcall(function() fireproximityprompt(prompt) end)
+    safeFireProximityPrompt(prompt)
     pcall(function() ProximityPromptService.PromptTriggered:Fire(prompt, Player) end)
     pcall(function()
         prompt:InputHoldBegin()
@@ -1420,11 +1474,15 @@ local function triggerPrompt(prompt)
 end
 
 local function pressKey(key)
+    -- PC executor dùng VirtualInputManager, hoặc keypress nếu có
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, key, false, game)
         task.wait(0.05)
         VirtualInputManager:SendKeyEvent(false, key, false, game)
     end)
+    if type(keypress) == "function" then
+        pcall(keypress, 0.05)
+    end
 end
 
 local currentMeat = nil
@@ -1460,17 +1518,15 @@ local function startAutoEat()
                     if char then
                         for _, p in ipairs(char:GetDescendants()) do
                             if p:IsA("BasePart") then
-                                pcall(function()
-                                    firetouchinterest(p, currentMeat, 0)
-                                    firetouchinterest(p, currentMeat, 1)
-                                end)
+                                safeFireTouch(p, currentMeat, 0)
+                                safeFireTouch(p, currentMeat, 1)
                             end
                         end
                     end
 
                     for _, d in ipairs(currentMeat:GetDescendants()) do
                         if d:IsA("ClickDetector") then
-                            pcall(function() fireclickdetector(d) end)
+                            safeFireClick(d)
                         end
                     end
 
@@ -1510,4 +1566,4 @@ spawn(function()
     end
 end)
 
-print("PHÚ ROBLOX HUB loaded")
+print("[PHÚ ROBLOX HUB] Loaded | Executor: " .. EXECUTOR_NAME .. " | Platform: " .. (IS_PC and "PC" or "Mobile"))
