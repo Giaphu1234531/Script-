@@ -2,7 +2,7 @@
     PHÚ ROBLOX HUB
     itipati! Primeval Earth | Dinosaur
     Auto Kill + Auto Ownership Area + Auto Eat + Speed + Jump + ESP + Hop + Hitbox
-    Mobile + PC (Potassium) Support
+    Mobile + PC (Potassium / Delta / Xeno / Solara) Support
 ]]
 
 local Players = game:GetService("Players")
@@ -15,57 +15,61 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-
 local PlaceId = game.PlaceId
+
+--==================================================
+-- EXECUTOR DETECT
+--==================================================
+
 local IS_PC = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
 local IS_MOBILE = UserInputService.TouchEnabled
 
--- Hỗ trợ executor: Potassium, Delta, Xeno, Solara, v.v...
-local IS_POTASSIUM = (type(identifyexecutor) == "function" and identifyexecutor():lower():find("potassium")) and true or false
 local EXECUTOR_NAME = "Unknown"
 pcall(function()
     if type(identifyexecutor) == "function" then
-        EXECUTOR_NAME = identifyexecutor()
+        EXECUTOR_NAME = tostring(identifyexecutor())
+    elseif type(getexecutorname) == "function" then
+        EXECUTOR_NAME = tostring(getexecutorname())
     end
 end)
 
--- Safe wrappers
-local function safeFireProximityPrompt(prompt)
-    if type(fireproximityprompt) == "function" then
-        pcall(fireproximityprompt, prompt)
+--==================================================
+-- GET SAFE PARENT GUI (CoreGui hoặc PlayerGui)
+--==================================================
+
+local function getSafeGuiParent()
+    -- Thử CoreGui trước (Potassium thường dùng CoreGui)
+    local ok, cg = pcall(function()
+        return game:GetService("CoreGui")
+    end)
+    if ok and cg then
+        -- Test xem có ghi được không
+        local test = pcall(function()
+            local t = Instance.new("Folder")
+            t.Name = "_phu_test_" .. tick()
+            t.Parent = cg
+            t:Destroy()
+        end)
+        if test then
+            return cg
+        end
     end
+    -- Fallback PlayerGui
+    return Player:WaitForChild("PlayerGui")
 end
 
-local function safeFireTouch(a, b, state)
-    if type(firetouchinterest) == "function" then
-        pcall(firetouchinterest, a, b, state)
-    end
-end
-
-local function safeFireClick(detector)
-    if type(fireclickdetector) == "function" then
-        pcall(fireclickdetector, detector)
-    end
-end
-
-local function safeHttpGet(url)
-    if type(game.HttpGet) == "function" then
-        return game:HttpGet(url)
-    end
-    if type(httpget) == "function" then
-        return httpget(url)
-    end
-    if type(request) == "function" then
-        return request({Url = url, Method = "GET"}).Body
-    end
-    return nil
-end
+local GuiParent = getSafeGuiParent()
 
 -- Cleanup UI cũ
-for _, name in ipairs({"PrimevalEarth_UI", "PhuRobloxHub"}) do
-    local old = PlayerGui:FindFirstChild(name)
-    if old then old:Destroy() end
+for _, parent in ipairs({Player:FindFirstChild("PlayerGui"), (pcall(function() return game:GetService("CoreGui") end)) and game:GetService("CoreGui") or nil}) do
+    if parent then
+        for _, name in ipairs({"PrimevalEarth_UI", "PhuRobloxHub"}) do
+            local old = parent:FindFirstChild(name)
+            if old then
+                pcall(function() old:Destroy() end)
+            end
+        end
+    end
 end
 
 --==================================================
@@ -77,7 +81,10 @@ ScreenGui.Name = "PrimevalEarth_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
+pcall(function() ScreenGui.Parent = GuiParent end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+end
 
 local Scale = Instance.new("UIScale")
 Scale.Scale = 1
@@ -119,7 +126,6 @@ LogoToggle.ImageColor3 = Color3.fromRGB(255, 255, 255)
 LogoToggle.ScaleType = Enum.ScaleType.Fit
 LogoToggle.AutoButtonColor = false
 LogoToggle.Active = true
-LogoToggle.Draggable = true
 LogoToggle.Parent = ScreenGui
 
 local LogoCorner = Instance.new("UICorner")
@@ -137,6 +143,40 @@ LogoPadding.PaddingBottom = UDim.new(0, 6)
 LogoPadding.PaddingLeft = UDim.new(0, 6)
 LogoPadding.PaddingRight = UDim.new(0, 6)
 LogoPadding.Parent = LogoToggle
+
+-- Drag logo (PC + Mobile)
+local logoDragging = false
+local logoDragStart
+local logoStartPos
+
+LogoToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        logoDragging = true
+        logoDragStart = input.Position
+        logoStartPos = LogoToggle.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if logoDragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - logoDragStart
+        LogoToggle.Position = UDim2.new(
+            logoStartPos.X.Scale,
+            logoStartPos.X.Offset + delta.X,
+            logoStartPos.Y.Scale,
+            logoStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        logoDragging = false
+    end
+end)
 
 spawn(function()
     while LogoToggle.Parent do
@@ -212,7 +252,7 @@ local SubTitle = Instance.new("TextLabel")
 SubTitle.Size = UDim2.new(1, -170, 0, 25)
 SubTitle.Position = UDim2.fromOffset(72, 39)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "Primeval Earth | Dinosaur • " .. (IS_PC and "PC" or "Mobile") .. " (" .. EXECUTOR_NAME .. ")"
+SubTitle.Text = "Primeval Earth • " .. (IS_PC and "PC" or "Mobile") .. " [" .. EXECUTOR_NAME .. "]"
 SubTitle.TextColor3 = Color3.fromRGB(145, 155, 158)
 SubTitle.TextSize = 13
 SubTitle.Font = Enum.Font.Gotham
@@ -245,41 +285,32 @@ Minimize.Font = Enum.Font.Gotham
 Minimize.Parent = Header
 
 --==================================================
--- DRAG (Mouse + Touch)
+-- DRAG MENU
 --==================================================
 
 local dragging = false
 local dragStart
 local startPos
 
-local function startDrag(input)
-    dragging = true
-    dragStart = input.Position
-    startPos = Main.Position
-end
-
-local function updateDrag(input)
-    if not dragging then return end
-    local delta = input.Position - dragStart
-    Main.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch
     or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        startDrag(input)
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.Touch
     or input.UserInputType == Enum.UserInputType.MouseMovement) then
-        updateDrag(input)
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
@@ -290,11 +321,12 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- PC: RightControl hoặc K để bật/tắt menu
+-- PC hotkey: RightControl / K / F1
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Enum.KeyCode.RightControl
-    or input.KeyCode == Enum.KeyCode.K then
+    or input.KeyCode == Enum.KeyCode.K
+    or input.KeyCode == Enum.KeyCode.F1 then
         Main.Visible = not Main.Visible
         LogoToggle.Visible = not Main.Visible
     end
@@ -713,6 +745,31 @@ Players.PlayerRemoving:Connect(function()
     UpdateCount()
 end)
 
+-- HttpGet fallback
+local function safeHttpGet(url)
+    if type(game.HttpGet) == "function" then
+        local ok, res = pcall(function() return game:HttpGet(url) end)
+        if ok and res then return res end
+    end
+    if type(httpget) == "function" then
+        local ok, res = pcall(httpget, url)
+        if ok and res then return res end
+    end
+    if type(request) == "function" then
+        local ok, res = pcall(function()
+            return request({Url = url, Method = "GET"}).Body
+        end)
+        if ok and res then return res end
+    end
+    if type(syn_request) == "function" then
+        local ok, res = pcall(function()
+            return syn_request({Url = url, Method = "GET"}).Body
+        end)
+        if ok and res then return res end
+    end
+    return nil
+end
+
 local function GetServers()
     local result = {}
     local cursor = ""
@@ -909,10 +966,16 @@ end
 showPage("Main")
 
 --==================================================
--- LOGO ↔ MENU TOGGLE
+-- LOGO ↔ MENU TOGGLE (click + touch + PC)
 --==================================================
 
 LogoToggle.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+    LogoToggle.Visible = not Main.Visible
+end)
+
+-- Fallback cho executor không fire MouseButton1Click
+LogoToggle.MouseButton1Down:Connect(function()
     Main.Visible = not Main.Visible
     LogoToggle.Visible = not Main.Visible
 end)
@@ -1459,7 +1522,9 @@ end
 
 local function triggerPrompt(prompt)
     if not prompt or not prompt.Parent then return end
-    safeFireProximityPrompt(prompt)
+    if type(fireproximityprompt) == "function" then
+        pcall(fireproximityprompt, prompt)
+    end
     pcall(function() ProximityPromptService.PromptTriggered:Fire(prompt, Player) end)
     pcall(function()
         prompt:InputHoldBegin()
@@ -1474,7 +1539,6 @@ local function triggerPrompt(prompt)
 end
 
 local function pressKey(key)
-    -- PC executor dùng VirtualInputManager, hoặc keypress nếu có
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, key, false, game)
         task.wait(0.05)
@@ -1518,15 +1582,19 @@ local function startAutoEat()
                     if char then
                         for _, p in ipairs(char:GetDescendants()) do
                             if p:IsA("BasePart") then
-                                safeFireTouch(p, currentMeat, 0)
-                                safeFireTouch(p, currentMeat, 1)
+                                if type(firetouchinterest) == "function" then
+                                    pcall(firetouchinterest, p, currentMeat, 0)
+                                    pcall(firetouchinterest, p, currentMeat, 1)
+                                end
                             end
                         end
                     end
 
                     for _, d in ipairs(currentMeat:GetDescendants()) do
                         if d:IsA("ClickDetector") then
-                            safeFireClick(d)
+                            if type(fireclickdetector) == "function" then
+                                pcall(fireclickdetector, d)
+                            end
                         end
                     end
 
@@ -1566,4 +1634,13 @@ spawn(function()
     end
 end)
 
+--==================================================
+-- AUTO SHOW MENU (mở menu luôn khi load)
+--==================================================
+
+Main.Visible = true
+LogoToggle.Visible = false
+
 print("[PHÚ ROBLOX HUB] Loaded | Executor: " .. EXECUTOR_NAME .. " | Platform: " .. (IS_PC and "PC" or "Mobile"))
+print("[PHÚ ROBLOX HUB] Menu đang hiện. Bấm × để ẩn, logo 🦖 để mở lại")
+print("[PHÚ ROBLOX HUB] PC hotkey: RightCtrl / K / F1")
