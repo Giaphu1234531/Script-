@@ -1,7 +1,7 @@
 --[[
     PHÚ ROBLOX HUB
     itipati! Primeval Earth | Dinosaur
-    Auto Kill + Auto Ownership Area + Auto Eat + Speed + Jump + ESP + Hop + Hitbox
+    Auto Kill + Auto Ownership + Auto Eat + Speed + Jump + Fly + ESP + Hop + Hitbox + Teleport Player
     Mobile + PC (Potassium / Delta / Xeno / Solara) Support
 ]]
 
@@ -17,10 +17,6 @@ local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
---==================================================
--- EXECUTOR DETECT
---==================================================
-
 local IS_PC = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
 local IS_MOBILE = UserInputService.TouchEnabled
 
@@ -33,41 +29,27 @@ pcall(function()
     end
 end)
 
---==================================================
--- GET SAFE PARENT GUI (CoreGui hoặc PlayerGui)
---==================================================
-
 local function getSafeGuiParent()
-    -- Thử CoreGui trước (Potassium thường dùng CoreGui)
-    local ok, cg = pcall(function()
-        return game:GetService("CoreGui")
-    end)
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
     if ok and cg then
-        -- Test xem có ghi được không
         local test = pcall(function()
             local t = Instance.new("Folder")
             t.Name = "_phu_test_" .. tick()
             t.Parent = cg
             t:Destroy()
         end)
-        if test then
-            return cg
-        end
+        if test then return cg end
     end
-    -- Fallback PlayerGui
     return Player:WaitForChild("PlayerGui")
 end
 
 local GuiParent = getSafeGuiParent()
 
--- Cleanup UI cũ
 for _, parent in ipairs({Player:FindFirstChild("PlayerGui"), (pcall(function() return game:GetService("CoreGui") end)) and game:GetService("CoreGui") or nil}) do
     if parent then
         for _, name in ipairs({"PrimevalEarth_UI", "PhuRobloxHub"}) do
             local old = parent:FindFirstChild(name)
-            if old then
-                pcall(function() old:Destroy() end)
-            end
+            if old then pcall(function() old:Destroy() end) end
         end
     end
 end
@@ -96,13 +78,9 @@ local function updateScale()
     if not Camera then return end
     local viewport = Camera.ViewportSize
     local minSize = math.min(viewport.X, viewport.Y)
-    if minSize < 500 then
-        Scale.Scale = 0.78
-    elseif minSize < 700 then
-        Scale.Scale = 0.88
-    else
-        Scale.Scale = 1
-    end
+    if minSize < 500 then Scale.Scale = 0.78
+    elseif minSize < 700 then Scale.Scale = 0.88
+    else Scale.Scale = 1 end
 end
 
 updateScale()
@@ -111,7 +89,7 @@ if Camera then
 end
 
 --==================================================
--- FLOATING LOGO TOGGLE
+-- FLOATING LOGO
 --==================================================
 
 local LogoToggle = Instance.new("ImageButton")
@@ -144,10 +122,7 @@ LogoPadding.PaddingLeft = UDim.new(0, 6)
 LogoPadding.PaddingRight = UDim.new(0, 6)
 LogoPadding.Parent = LogoToggle
 
--- Drag logo (PC + Mobile)
-local logoDragging = false
-local logoDragStart
-local logoStartPos
+local logoDragging, logoDragStart, logoStartPos = false, nil, nil
 
 LogoToggle.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -163,10 +138,8 @@ UserInputService.InputChanged:Connect(function(input)
     or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - logoDragStart
         LogoToggle.Position = UDim2.new(
-            logoStartPos.X.Scale,
-            logoStartPos.X.Offset + delta.X,
-            logoStartPos.Y.Scale,
-            logoStartPos.Y.Offset + delta.Y
+            logoStartPos.X.Scale, logoStartPos.X.Offset + delta.X,
+            logoStartPos.Y.Scale, logoStartPos.Y.Offset + delta.Y
         )
     end
 end)
@@ -288,9 +261,7 @@ Minimize.Parent = Header
 -- DRAG MENU
 --==================================================
 
-local dragging = false
-local dragStart
-local startPos
+local dragging, dragStart, startPos = false, nil, nil
 
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch
@@ -306,10 +277,8 @@ UserInputService.InputChanged:Connect(function(input)
     or input.UserInputType == Enum.UserInputType.MouseMovement) then
         local delta = input.Position - dragStart
         Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
     end
 end)
@@ -321,7 +290,6 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- PC hotkey: RightControl / K / F1
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Enum.KeyCode.RightControl
@@ -333,7 +301,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 --==================================================
--- SIDEBAR
+-- SIDEBAR + CONTENT
 --==================================================
 
 local Sidebar = Instance.new("Frame")
@@ -352,10 +320,6 @@ SidebarList.Parent = Sidebar
 local SidebarPadding = Instance.new("UIPadding")
 SidebarPadding.PaddingTop = UDim.new(0, 18)
 SidebarPadding.Parent = Sidebar
-
---==================================================
--- CONTENT
---==================================================
 
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -215, 1, -75)
@@ -451,9 +415,7 @@ local function createToggleRow(parent, title, description, default, key)
     local Switch = Instance.new("Frame")
     Switch.Size = UDim2.fromOffset(60, 32)
     Switch.Position = UDim2.new(1, -72, 0.5, -16)
-    Switch.BackgroundColor3 = default
-        and Color3.fromRGB(35, 190, 110)
-        or Color3.fromRGB(65, 76, 82)
+    Switch.BackgroundColor3 = default and Color3.fromRGB(35, 190, 110) or Color3.fromRGB(65, 76, 82)
     Switch.BorderSizePixel = 0
     Switch.Parent = Row
 
@@ -463,9 +425,7 @@ local function createToggleRow(parent, title, description, default, key)
 
     local Circle = Instance.new("Frame")
     Circle.Size = UDim2.fromOffset(24, 24)
-    Circle.Position = default
-        and UDim2.new(1, -28, 0.5, -12)
-        or UDim2.fromOffset(4, 4)
+    Circle.Position = default and UDim2.new(1, -28, 0.5, -12) or UDim2.fromOffset(4, 4)
     Circle.BackgroundColor3 = Color3.fromRGB(240, 245, 245)
     Circle.BorderSizePixel = 0
     Circle.Parent = Switch
@@ -612,22 +572,261 @@ local settingsPage = createPage("Settings")
 createToggleRow(mainPage, "Auto Kill", "Tele sau lưng + đánh liên tục", false, "Auto Kill")
 createToggleRow(mainPage, "Auto Ownership Area", "Tele vào zone đỏ, chờ xanh", false, "Auto Ownership Area")
 createToggleRow(mainPage, "Auto Eat", "Tele tới Meat + Eat", false, "Auto Eat")
+createToggleRow(mainPage, "Auto Protect", "≤ 10% máu → tele lên trời, đứng im, đầy máu → về chỗ cũ", false, "Auto Protect")
 
 -- PLAYER
 local speedValue = 50
 local jumpValue = 120
 local hitboxSize = 5
+local flySpeed = 150
 
 createToggleRow(playerPage, "Speed Enabled", "Auto apply WalkSpeed (fix underwater)", false, "Speed Enabled")
 createToggleRow(playerPage, "Jump Enabled", "Auto apply JumpPower", false, "Jump Enabled")
+createToggleRow(playerPage, "Fly", "Kéo joystick hướng nào bay hướng đó", false, "Fly")
 createToggleRow(playerPage, "Hitbox Player", "To hitbox người khác → đánh xa", false, "Hitbox Player")
 
 createSlider(playerPage, "WalkSpeed", 16, 500, 50, function(v) speedValue = v end)
 createSlider(playerPage, "JumpPower", 50, 500, 120, function(v) jumpValue = v end)
+createSlider(playerPage, "Fly Speed", 10, 800, 150, function(v) flySpeed = v end)
 createSlider(playerPage, "Hitbox Size", 1, 100, 5, function(v) hitboxSize = v end)
 
 -- ESP
 createToggleRow(espPage, "ESP Player", "Highlight + tên + khoảng cách", false, "ESP Player")
+
+--==================================================
+--==================================================
+-- TELEPORTS — Player list (clean UI)
+--==================================================
+
+local tpPlayerRows = {} -- [player] = row frame
+local tpSearchQuery = ""
+
+-- Search box
+local tpSearch = Instance.new("TextBox")
+tpSearch.Size = UDim2.new(1, -20, 0, 42)
+tpSearch.BackgroundColor3 = Color3.fromRGB(22, 29, 32)
+tpSearch.BorderSizePixel = 0
+tpSearch.PlaceholderText = "🔎  Tìm tên người chơi..."
+tpSearch.PlaceholderColor3 = Color3.fromRGB(125, 137, 141)
+tpSearch.Text = ""
+tpSearch.TextColor3 = Color3.fromRGB(240, 245, 245)
+tpSearch.TextSize = 14
+tpSearch.Font = Enum.Font.Gotham
+tpSearch.TextXAlignment = Enum.TextXAlignment.Left
+tpSearch.ClearTextOnFocus = false
+tpSearch.Parent = tpPage
+
+local tpSearchPadding = Instance.new("UIPadding")
+tpSearchPadding.PaddingLeft = UDim.new(0, 14)
+tpSearchPadding.PaddingRight = UDim.new(0, 14)
+tpSearchPadding.Parent = tpSearch
+
+local tpSearchCorner = Instance.new("UICorner")
+tpSearchCorner.CornerRadius = UDim.new(0, 10)
+tpSearchCorner.Parent = tpSearch
+
+local tpSearchStroke = Instance.new("UIStroke")
+tpSearchStroke.Color = Color3.fromRGB(48, 60, 64)
+tpSearchStroke.Thickness = 1
+tpSearchStroke.Transparency = 0.25
+tpSearchStroke.Parent = tpSearch
+
+local tpHeader = Instance.new("Frame")
+tpHeader.Size = UDim2.new(1, -20, 0, 46)
+tpHeader.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
+tpHeader.BorderSizePixel = 0
+tpHeader.Parent = tpPage
+
+local tpHeaderCorner = Instance.new("UICorner")
+tpHeaderCorner.CornerRadius = UDim.new(0, 10)
+tpHeaderCorner.Parent = tpHeader
+
+local tpHeaderLabel = Instance.new("TextLabel")
+tpHeaderLabel.Size = UDim2.new(1, -28, 1, 0)
+tpHeaderLabel.Position = UDim2.fromOffset(14, 0)
+tpHeaderLabel.BackgroundTransparency = 1
+tpHeaderLabel.Text = "PLAYERS"
+tpHeaderLabel.TextColor3 = Color3.fromRGB(45, 220, 135)
+tpHeaderLabel.TextSize = 14
+tpHeaderLabel.Font = Enum.Font.GothamBold
+tpHeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+tpHeaderLabel.Parent = tpHeader
+
+local function teleportToPlayer(target)
+    if not target then return end
+    local localRoot = getLocalRoot and getLocalRoot()
+        or (Player.Character and Player.Character:FindFirstChild("HumanoidRootPart"))
+    if not localRoot then return end
+
+    local targetChar = target.Character
+    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return end
+
+    localRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 3, 0))
+    localRoot.Velocity = Vector3.zero
+    localRoot.AssemblyLinearVelocity = Vector3.zero
+end
+
+local function tpMatchesSearch(plr)
+    if tpSearchQuery == "" then
+        return true
+    end
+
+    local q = tpSearchQuery:lower()
+    return plr.Name:lower():find(q, 1, true) ~= nil
+        or plr.DisplayName:lower():find(q, 1, true) ~= nil
+end
+
+local function updateTeleportRowsVisibility()
+    for plr, row in pairs(tpPlayerRows) do
+        if row and row.Parent then
+            row.Visible = tpMatchesSearch(plr)
+        end
+    end
+end
+
+local function createPlayerRow(plr)
+    if plr == Player or tpPlayerRows[plr] then return end
+
+    local Row = Instance.new("Frame")
+    Row.Size = UDim2.new(1, -20, 0, 58)
+    Row.BackgroundColor3 = Color3.fromRGB(22, 29, 32)
+    Row.BorderSizePixel = 0
+    Row.Parent = tpPage
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Row
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(48, 60, 64)
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.45
+    Stroke.Parent = Row
+
+    -- Player avatar
+    local Avatar = Instance.new("ImageLabel")
+    Avatar.Size = UDim2.fromOffset(42, 42)
+    Avatar.Position = UDim2.fromOffset(9, 8)
+    Avatar.BackgroundColor3 = Color3.fromRGB(35, 44, 47)
+    Avatar.BorderSizePixel = 0
+    Avatar.Parent = Row
+
+    local AvatarCorner = Instance.new("UICorner")
+    AvatarCorner.CornerRadius = UDim.new(1, 0)
+    AvatarCorner.Parent = Avatar
+
+    pcall(function()
+        Avatar.Image = Players:GetUserThumbnailAsync(
+            plr.UserId,
+            Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size100x100
+        )
+    end)
+
+    -- Display name
+    local DisplayName = Instance.new("TextLabel")
+    DisplayName.Size = UDim2.new(1, -145, 0, 23)
+    DisplayName.Position = UDim2.fromOffset(61, 7)
+    DisplayName.BackgroundTransparency = 1
+    DisplayName.Text = plr.DisplayName
+    DisplayName.TextColor3 = Color3.fromRGB(242, 245, 245)
+    DisplayName.TextSize = 15
+    DisplayName.Font = Enum.Font.GothamMedium
+    DisplayName.TextXAlignment = Enum.TextXAlignment.Left
+    DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
+    DisplayName.Parent = Row
+
+    -- Username
+    local Username = Instance.new("TextLabel")
+    Username.Size = UDim2.new(1, -145, 0, 18)
+    Username.Position = UDim2.fromOffset(61, 31)
+    Username.BackgroundTransparency = 1
+    Username.Text = "@" .. plr.Name
+    Username.TextColor3 = Color3.fromRGB(130, 142, 146)
+    Username.TextSize = 11
+    Username.Font = Enum.Font.Gotham
+    Username.TextXAlignment = Enum.TextXAlignment.Left
+    Username.TextTruncate = Enum.TextTruncate.AtEnd
+    Username.Parent = Row
+
+    -- Compact teleport button
+    local TeleBtn = Instance.new("TextButton")
+    TeleBtn.Size = UDim2.fromOffset(72, 36)
+    TeleBtn.Position = UDim2.new(1, -82, 0.5, -18)
+    TeleBtn.BackgroundColor3 = Color3.fromRGB(30, 155, 100)
+    TeleBtn.BorderSizePixel = 0
+    TeleBtn.Text = "TP"
+    TeleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeleBtn.TextSize = 14
+    TeleBtn.Font = Enum.Font.GothamBold
+    TeleBtn.AutoButtonColor = false
+    TeleBtn.Parent = Row
+
+    local TeleCorner = Instance.new("UICorner")
+    TeleCorner.CornerRadius = UDim.new(0, 9)
+    TeleCorner.Parent = TeleBtn
+
+    local TeleStroke = Instance.new("UIStroke")
+    TeleStroke.Color = Color3.fromRGB(45, 220, 135)
+    TeleStroke.Thickness = 1
+    TeleStroke.Transparency = 0.3
+    TeleStroke.Parent = TeleBtn
+
+    TeleBtn.MouseButton1Click:Connect(function()
+        teleportToPlayer(plr)
+    end)
+
+    TeleBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            TeleBtn.BackgroundColor3 = Color3.fromRGB(22, 115, 76)
+        end
+    end)
+
+    TeleBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            TeleBtn.BackgroundColor3 = Color3.fromRGB(30, 155, 100)
+        end
+    end)
+
+    plr:GetPropertyChangedSignal("DisplayName"):Connect(function()
+        if Row.Parent then
+            DisplayName.Text = plr.DisplayName
+        end
+    end)
+
+    tpPlayerRows[plr] = Row
+end
+
+local function removePlayerRow(plr)
+    local row = tpPlayerRows[plr]
+    if row then
+        row:Destroy()
+        tpPlayerRows[plr] = nil
+    end
+end
+
+tpSearch:GetPropertyChangedSignal("Text"):Connect(function()
+    tpSearchQuery = tpSearch.Text:gsub("^%s+", ""):gsub("%s+$", "")
+    updateTeleportRowsVisibility()
+end)
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr ~= Player then
+        createPlayerRow(plr)
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    createPlayerRow(plr)
+    updateTeleportRowsVisibility()
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    removePlayerRow(plr)
+end)
 
 --==================================================
 -- SETTINGS — HOP SERVER
@@ -636,6 +835,15 @@ createToggleRow(espPage, "ESP Player", "Highlight + tên + khoảng cách", fals
 local HOPPING = false
 local MAX_PLAYERS = 2
 local MAX_SERVER_PAGES = 10
+
+-- AUTO PROTECT — adjustable HP trigger
+local autoProtectPercent = 10
+local AUTO_PROTECT_THRESHOLD = autoProtectPercent / 100
+
+createSlider(settingsPage, "Auto Protect HP (%)", 1, 100, autoProtectPercent, function(v)
+    autoProtectPercent = math.floor(v + 0.5)
+    AUTO_PROTECT_THRESHOLD = autoProtectPercent / 100
+end)
 
 local StatusRow = Instance.new("Frame")
 StatusRow.Size = UDim2.new(1, -20, 0, 85)
@@ -745,7 +953,6 @@ Players.PlayerRemoving:Connect(function()
     UpdateCount()
 end)
 
--- HttpGet fallback
 local function safeHttpGet(url)
     if type(game.HttpGet) == "function" then
         local ok, res = pcall(function() return game:HttpGet(url) end)
@@ -758,12 +965,6 @@ local function safeHttpGet(url)
     if type(request) == "function" then
         local ok, res = pcall(function()
             return request({Url = url, Method = "GET"}).Body
-        end)
-        if ok and res then return res end
-    end
-    if type(syn_request) == "function" then
-        local ok, res = pcall(function()
-            return syn_request({Url = url, Method = "GET"}).Body
         end)
         if ok and res then return res end
     end
@@ -790,9 +991,7 @@ local function GetServers()
             return HttpService:JSONDecode(body)
         end)
 
-        if not success or not data or not data.data then
-            break
-        end
+        if not success or not data or not data.data then break end
 
         for _, server in ipairs(data.data) do
             local playing = tonumber(server.playing) or 0
@@ -844,7 +1043,6 @@ local function HopServer()
     HopBtn.Text = "Đang teleport..."
 
     task.wait(0.3)
-
     local ok = TeleportToServer(servers[1])
 
     if not ok then
@@ -865,21 +1063,6 @@ local function HopServer()
 end
 
 HopBtn.MouseButton1Click:Connect(HopServer)
-
-HopBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        HopBtn.BackgroundColor3 = Color3.fromRGB(12, 55, 95)
-    end
-end)
-HopBtn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        if not HOPPING then
-            HopBtn.BackgroundColor3 = Color3.fromRGB(18, 75, 125)
-        end
-    end
-end)
 
 --==================================================
 -- TAB BUTTONS
@@ -966,7 +1149,7 @@ end
 showPage("Main")
 
 --==================================================
--- LOGO ↔ MENU TOGGLE (click + touch + PC)
+-- LOGO TOGGLE
 --==================================================
 
 LogoToggle.MouseButton1Click:Connect(function()
@@ -974,7 +1157,6 @@ LogoToggle.MouseButton1Click:Connect(function()
     LogoToggle.Visible = not Main.Visible
 end)
 
--- Fallback cho executor không fire MouseButton1Click
 LogoToggle.MouseButton1Down:Connect(function()
     Main.Visible = not Main.Visible
     LogoToggle.Visible = not Main.Visible
@@ -989,7 +1171,7 @@ end)
 -- HELPERS
 --==================================================
 
-local function getLocalRoot()
+function getLocalRoot()
     local char = Player.Character
     return char and char:FindFirstChild("HumanoidRootPart")
 end
@@ -1062,6 +1244,138 @@ Player.CharacterAdded:Connect(function(char)
 end)
 
 --==================================================
+-- FLY
+--==================================================
+
+local flyBV = nil
+local flyBG = nil
+
+local function cleanupFly()
+    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
+    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
+    local char = Player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end
+    end
+end
+
+local function initFly()
+    local char = Player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if flyBV then flyBV:Destroy() end
+    if flyBG then flyBG:Destroy() end
+
+    flyBV = Instance.new("BodyVelocity")
+    flyBV.Name = "PhuFlyBV"
+    flyBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    flyBV.Velocity = Vector3.zero
+    flyBV.P = 2000
+    flyBV.Parent = hrp
+
+    flyBG = Instance.new("BodyGyro")
+    flyBG.Name = "PhuFlyBG"
+    flyBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    flyBG.P = 2000
+    flyBG.D = 50
+    flyBG.CFrame = hrp.CFrame
+    flyBG.Parent = hrp
+end
+
+RunService.RenderStepped:Connect(function(dt)
+    if not toggleStates["Fly"] then
+        if flyBV or flyBG then
+            cleanupFly()
+        end
+        return
+    end
+
+    local char = Player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+
+    if not flyBV or flyBV.Parent ~= hrp then
+        initFly()
+    end
+
+    hum.PlatformStand = true
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    local camLook = cam.CFrame.LookVector
+    local camRight = cam.CFrame.RightVector
+    local moveDir = hum.MoveDirection
+
+    local flatLook = Vector3.new(camLook.X, 0, camLook.Z)
+    if flatLook.Magnitude < 0.001 then
+        flatLook = Vector3.new(0, 0, -1)
+    else
+        flatLook = flatLook.Unit
+    end
+
+    local flatRight = Vector3.new(camRight.X, 0, camRight.Z)
+    if flatRight.Magnitude < 0.001 then
+        flatRight = Vector3.new(1, 0, 0)
+    else
+        flatRight = flatRight.Unit
+    end
+
+    local fwd = 0
+    local rgt = 0
+    if moveDir.Magnitude > 0.01 then
+        fwd = moveDir:Dot(flatLook)
+        rgt = moveDir:Dot(flatRight)
+    end
+
+    local vInput = 0
+    if IS_PC then
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            vInput = vInput + 1
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+        or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            vInput = vInput - 1
+        end
+    end
+
+    local dir = Vector3.zero
+    dir = dir + flatLook * fwd
+    dir = dir + flatRight * rgt
+
+    if math.abs(fwd) > 0.01 then
+        dir = dir + Vector3.new(0, camLook.Y * fwd * 1.8, 0)
+    end
+
+    if vInput ~= 0 then
+        dir = dir + Vector3.new(0, vInput, 0)
+    end
+
+    local horiz = Vector3.new(dir.X, 0, dir.Z)
+    local vert = dir.Y
+
+    local finalVel = Vector3.zero
+    if horiz.Magnitude > 0.001 then
+        finalVel = finalVel + horiz.Unit * flySpeed * math.min(horiz.Magnitude, 1)
+    end
+    if math.abs(vert) > 0.001 then
+        finalVel = finalVel + Vector3.new(0, math.clamp(vert, -1.5, 1.5) * flySpeed, 0)
+    end
+
+    flyBV.Velocity = finalVel
+    flyBG.CFrame = CFrame.new(hrp.Position, hrp.Position + camLook)
+end)
+
+Player.CharacterAdded:Connect(function()
+    cleanupFly()
+end)
+
+--==================================================
 -- HITBOX PLAYER
 --==================================================
 
@@ -1069,9 +1383,7 @@ local hitboxData = {}
 
 local function removeHitbox(plr)
     local hb = hitboxData[plr]
-    if hb and hb.Parent then
-        hb:Destroy()
-    end
+    if hb and hb.Parent then hb:Destroy() end
     hitboxData[plr] = nil
 end
 
@@ -1273,6 +1585,12 @@ end)
 -- AUTO KILL
 --==================================================
 
+-- Auto Protect shared state (declared before movement loops so they can yield to protection)
+local autoProtecting = false
+local autoProtectSavedCFrame = nil
+local autoProtectSavedCharacter = nil
+
+
 local function getNearestPlayer()
     local localRoot = getLocalRoot()
     if not localRoot then return nil end
@@ -1334,6 +1652,10 @@ local function startAutoKill()
     spawn(function()
         equipAnyTool()
         while autoKillRunning and toggleStates["Auto Kill"] do
+            if autoProtecting then
+                wait(0.05)
+                continue
+            end
             local target = getNearestPlayer()
             if target then
                 local targetChar = target.Character
@@ -1557,6 +1879,10 @@ local function startAutoEat()
     autoEatRunning = true
     spawn(function()
         while autoEatRunning and toggleStates["Auto Eat"] do
+            if autoProtecting then
+                wait(0.05)
+                continue
+            end
             local localRoot = getLocalRoot()
             if not localRoot then
                 wait(0.2)
@@ -1608,6 +1934,76 @@ local function startAutoEat()
 end
 
 --==================================================
+-- AUTO PROTECT
+--==================================================
+
+local AUTO_PROTECT_HEIGHT = 300 -- độ cao an toàn trên vị trí hiện tại
+local function stopAutoProtect()
+    autoProtecting = false
+    autoProtectSavedCFrame = nil
+    autoProtectSavedCharacter = nil
+end
+
+RunService.Heartbeat:Connect(function()
+    if not toggleStates["Auto Protect"] then
+        if autoProtecting then
+            stopAutoProtect()
+        end
+        return
+    end
+
+    local char = Player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not char or not hum or not root or hum.MaxHealth <= 0 then
+        return
+    end
+
+    -- Character respawned: discard the old saved position.
+    if autoProtectSavedCharacter and autoProtectSavedCharacter ~= char then
+        autoProtecting = false
+        autoProtectSavedCFrame = nil
+        autoProtectSavedCharacter = nil
+    end
+
+    local healthRatio = hum.Health / hum.MaxHealth
+
+    -- Trigger exactly when health reaches 10% or lower.
+    if not autoProtecting and hum.Health > 0 and healthRatio <= AUTO_PROTECT_THRESHOLD then
+        autoProtectSavedCFrame = root.CFrame
+        autoProtectSavedCharacter = char
+        autoProtecting = true
+    end
+
+    if autoProtecting then
+        -- Stay completely still in the sky while regenerating.
+        local skyCFrame = CFrame.new(
+            autoProtectSavedCFrame.Position + Vector3.new(0, AUTO_PROTECT_HEIGHT, 0)
+        ) * CFrame.fromMatrix(
+            Vector3.zero,
+            autoProtectSavedCFrame.XVector,
+            autoProtectSavedCFrame.YVector,
+            autoProtectSavedCFrame.ZVector
+        )
+        root.CFrame = skyCFrame
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
+
+        -- Return only after the health bar is full.
+        if hum.Health >= hum.MaxHealth - 0.01 then
+            root.CFrame = autoProtectSavedCFrame
+            root.AssemblyLinearVelocity = Vector3.zero
+            root.AssemblyAngularVelocity = Vector3.zero
+            stopAutoProtect()
+        end
+    end
+end)
+
+Player.CharacterAdded:Connect(function()
+    stopAutoProtect()
+end)
+
+--==================================================
 -- TOGGLE MONITOR
 --==================================================
 
@@ -1631,16 +2027,265 @@ spawn(function()
             autoEatRunning = false
             currentMeat = nil
         end
+        if not toggleStates["Auto Protect"] and autoProtecting then
+            stopAutoProtect()
+        end
     end
 end)
 
 --==================================================
--- AUTO SHOW MENU (mở menu luôn khi load)
+-- AUTO SHOW MENU
 --==================================================
 
-Main.Visible = true
+--==================================================
+-- SUBSCRIBE GATE — hiển thị trước menu
+--==================================================
+
+Main.Visible = false
 LogoToggle.Visible = false
 
+local Gate = Instance.new("Frame")
+Gate.Name = "SubscribeGate"
+Gate.Size = UDim2.fromOffset(520, 300)
+Gate.Position = UDim2.fromScale(0.5, 0.5)
+Gate.AnchorPoint = Vector2.new(0.5, 0.5)
+Gate.BackgroundColor3 = Color3.fromRGB(12, 17, 19)
+Gate.BorderSizePixel = 0
+Gate.Parent = ScreenGui
+
+local GateCorner = Instance.new("UICorner")
+GateCorner.CornerRadius = UDim.new(0, 16)
+GateCorner.Parent = Gate
+
+local GateStroke = Instance.new("UIStroke")
+GateStroke.Color = Color3.fromRGB(45, 220, 135)
+GateStroke.Thickness = 1.5
+GateStroke.Parent = Gate
+
+local GateTitle = Instance.new("TextLabel")
+GateTitle.Size = UDim2.new(1, -30, 0, 45)
+GateTitle.Position = UDim2.fromOffset(15, 28)
+GateTitle.BackgroundTransparency = 1
+GateTitle.Text = "PHÚ ROBLOX HUB"
+GateTitle.TextColor3 = Color3.fromRGB(245, 245, 245)
+GateTitle.TextSize = 25
+GateTitle.Font = Enum.Font.GothamBold
+GateTitle.Parent = Gate
+
+local GateQuestion = Instance.new("TextLabel")
+GateQuestion.Size = UDim2.new(1, -40, 0, 70)
+GateQuestion.Position = UDim2.fromOffset(20, 85)
+GateQuestion.BackgroundTransparency = 1
+GateQuestion.Text = "Bạn đã đăng ký kênh Phú Roblox chưa?"
+GateQuestion.TextColor3 = Color3.fromRGB(225, 230, 232)
+GateQuestion.TextSize = 19
+GateQuestion.Font = Enum.Font.GothamMedium
+GateQuestion.TextWrapped = true
+GateQuestion.Parent = Gate
+
+local YesBtn = Instance.new("TextButton")
+YesBtn.Size = UDim2.fromOffset(200, 55)
+YesBtn.Position = UDim2.new(0, 45, 1, -80)
+YesBtn.BackgroundColor3 = Color3.fromRGB(35, 190, 110)
+YesBtn.BorderSizePixel = 0
+YesBtn.Text = "✓  RỒI"
+YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+YesBtn.TextSize = 17
+YesBtn.Font = Enum.Font.GothamBold
+YesBtn.Parent = Gate
+
+local YesCorner = Instance.new("UICorner")
+YesCorner.CornerRadius = UDim.new(0, 10)
+YesCorner.Parent = YesBtn
+
+local NoBtn = Instance.new("TextButton")
+NoBtn.Size = UDim2.fromOffset(200, 55)
+NoBtn.Position = UDim2.new(1, -245, 1, -80)
+NoBtn.BackgroundColor3 = Color3.fromRGB(65, 76, 82)
+NoBtn.BorderSizePixel = 0
+NoBtn.Text = "✕  CHƯA"
+NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoBtn.TextSize = 17
+NoBtn.Font = Enum.Font.GothamBold
+NoBtn.Parent = Gate
+
+local NoCorner = Instance.new("UICorner")
+NoCorner.CornerRadius = UDim.new(0, 10)
+NoCorner.Parent = NoBtn
+
+local function closeGateAndOpenMenu()
+    Gate.Visible = false
+    Main.Visible = true
+    LogoToggle.Visible = false
+end
+
+YesBtn.MouseButton1Click:Connect(function()
+    closeGateAndOpenMenu()
+end)
+
+NoBtn.MouseButton1Click:Connect(function()
+    GateQuestion.Text = "Bạn chưa đăng ký kênh Phú Roblox =)))\nKhông đăng ký thì không được chơi!"
+    GateQuestion.TextColor3 = Color3.fromRGB(255, 100, 100)
+    YesBtn.Visible = false
+    NoBtn.Visible = false
+
+    task.wait(1.5)
+
+    pcall(function()
+        Player:Kick("Bạn chưa đăng ký kênh Phú Roblox =)))")
+    end)
+end)
+
 print("[PHÚ ROBLOX HUB] Loaded | Executor: " .. EXECUTOR_NAME .. " | Platform: " .. (IS_PC and "PC" or "Mobile"))
-print("[PHÚ ROBLOX HUB] Menu đang hiện. Bấm × để ẩn, logo 🦖 để mở lại")
-print("[PHÚ ROBLOX HUB] PC hotkey: RightCtrl / K / F1")
+print("[PHÚ ROBLOX HUB] Hotkey PC: RightCtrl / K / F1")    ClickBtn.Text = ""
+    ClickBtn.Parent = Row
+
+    local enabled = default
+    toggleStates[key] = enabled
+
+    ClickBtn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        toggleStates[key] = enabled
+        if enabled then
+            Switch.BackgroundColor3 = Color3.fromRGB(35, 190, 110)
+            Circle:TweenPosition(UDim2.new(1, -28, 0.5, -12), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+        else
+            Switch.BackgroundColor3 = Color3.fromRGB(65, 76, 82)
+            Circle:TweenPosition(UDim2.fromOffset(4, 4), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+        end
+    end)
+
+    return Row
+end
+
+local function createSlider(parent, title, min, max, default, callback)
+    local Holder = Instance.new("Frame")
+    Holder.Size = UDim2.new(1, -20, 0, 72)
+    Holder.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
+    Holder.BorderSizePixel = 0
+    Holder.Parent = parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 9)
+    Corner.Parent = Holder
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -20, 0, 22)
+    Label.Position = UDim2.fromOffset(14, 6)
+    Label.BackgroundTransparency = 1
+    Label.Text = title .. ": " .. tostring(default)
+    Label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    Label.TextSize = 14
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Holder
+
+    local Bar = Instance.new("Frame")
+    Bar.Size = UDim2.new(1, -28, 0, 10)
+    Bar.Position = UDim2.fromOffset(14, 42)
+    Bar.BackgroundColor3 = Color3.fromRGB(45, 55, 60)
+    Bar.BorderSizePixel = 0
+    Bar.Parent = Holder
+
+    local BarCorner = Instance.new("UICorner")
+    BarCorner.CornerRadius = UDim.new(1, 0)
+    BarCorner.Parent = Bar
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(35, 190, 110)
+    Fill.BorderSizePixel = 0
+    Fill.Parent = Bar
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(1, 0)
+    FillCorner.Parent = Fill
+
+    local Knob = Instance.new("Frame")
+    Knob.Size = UDim2.fromOffset(18, 18)
+    Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    Knob.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
+    Knob.BackgroundColor3 = Color3.fromRGB(240, 245, 245)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Bar
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local draggingBar = false
+    local value = default
+
+    local function setValue(v)
+        value = math.clamp(v, min, max)
+        local pct = (value - min) / (max - min)
+        Fill.Size = UDim2.new(pct, 0, 1, 0)
+        Knob.Position = UDim2.new(pct, 0, 0.5, 0)
+        Label.Text = title .. ": " .. string.format("%.1f", value)
+        if callback then callback(value) end
+    end
+
+    local function handleInput(input)
+        local pos = input.Position.X - Bar.AbsolutePosition.X
+        local pct = math.clamp(pos / Bar.AbsoluteSize.X, 0, 1)
+        setValue(min + pct * (max - min))
+    end
+
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            draggingBar = true
+            handleInput(input)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if draggingBar and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            handleInput(input)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            draggingBar = false
+        end
+    end)
+
+    setValue(default)
+    return Holder
+end
+
+--==================================================
+-- PAGES BUILD
+--==================================================
+
+local mainPage = createPage("Main")
+local playerPage = createPage("Player")
+local dinoPage = createPage("Dinosaur")
+local espPage = createPage("ESP")
+local tpPage = createPage("Teleports")
+local settingsPage = createPage("Settings")
+
+-- MAIN
+createToggleRow(mainPage, "Auto Kill", "Tele sau lưng + đánh liên tục", false, "Auto Kill")
+createToggleRow(mainPage, "Auto Ownership Area", "Tele vào zone đỏ, chờ xanh", false, "Auto Ownership Area")
+createToggleRow(mainPage, "Auto Eat", "Tele tới Meat + Eat", false, "Auto Eat")
+createToggleRow(mainPage, "Auto Protect", "≤ 10% máu → tele lên trời, đứng im, đầy máu → về chỗ cũ", false, "Auto Protect")
+
+-- PLAYER
+local speedValue = 50
+local jumpValue = 120
+local hitboxSize = 5
+local flySpeed = 150
+
+createToggleRow(playerPage, "Speed Enabled", "Auto apply WalkSpeed (fix underwater)", false, "Speed Enabled")
+createToggleRow(playerPage, "Jump Enabled", "Auto apply JumpPower", false, "Jump Enabled")
+createToggleRow(playerPage, "Fly", "Kéo joystick hướng nào bay hướng đó", false, "Fly")
+createToggleRow(playerPage, "Hitbox Player", "To hitbox người khác → đánh xa", false, "Hitbox Player")
+
+createSlider(playerPage, "WalkSpeed", 16, 500, 50, function(v) speedValue = v end)
+createSlider(playerPage, "JumpPower", 50, 500, 120, function(v) jumpValue = v end)
+createSlider(playerPage, "Fly Speed", 10, 800, 150, function(v) flySpeed = v end)
+createSl
