@@ -1,7 +1,8 @@
 --[[
     PHÚ ROBLOX HUB
     itipati! Primeval Earth | Dinosaur
-    Auto Kill + Auto Ownership + Auto Eat + Speed + Jump + Fly + ESP + Hop + Hitbox + Teleport Player
+    Auto Kill + Auto Ownership + Auto Eat + Auto Protect
+    + Speed + Jump + Fly + ESP Player + ESP Health + Hop + Teleport Player
     Mobile + PC (Potassium / Delta / Xeno / Solara) Support
 ]]
 
@@ -572,36 +573,32 @@ local settingsPage = createPage("Settings")
 createToggleRow(mainPage, "Auto Kill", "Tele sau lưng + đánh liên tục", false, "Auto Kill")
 createToggleRow(mainPage, "Auto Ownership Area", "Tele vào zone đỏ, chờ xanh", false, "Auto Ownership Area")
 createToggleRow(mainPage, "Auto Eat", "Tele tới Meat + Eat", false, "Auto Eat")
-createToggleRow(mainPage, "Auto Protect", "≤ 10% máu → tele lên trời, đứng im, đầy máu → về chỗ cũ", false, "Auto Protect")
+createToggleRow(mainPage, "Auto Protect", "≤ HP ngưỡng → tele lên trời, đứng im, đầy máu → về chỗ cũ", false, "Auto Protect")
 
 -- PLAYER
 local speedValue = 50
 local jumpValue = 120
-local hitboxSize = 5
 local flySpeed = 150
 
 createToggleRow(playerPage, "Speed Enabled", "Auto apply WalkSpeed (fix underwater)", false, "Speed Enabled")
 createToggleRow(playerPage, "Jump Enabled", "Auto apply JumpPower", false, "Jump Enabled")
 createToggleRow(playerPage, "Fly", "Kéo joystick hướng nào bay hướng đó", false, "Fly")
-createToggleRow(playerPage, "Hitbox Player", "To hitbox người khác → đánh xa", false, "Hitbox Player")
 
 createSlider(playerPage, "WalkSpeed", 16, 500, 50, function(v) speedValue = v end)
 createSlider(playerPage, "JumpPower", 50, 500, 120, function(v) jumpValue = v end)
 createSlider(playerPage, "Fly Speed", 10, 800, 150, function(v) flySpeed = v end)
-createSlider(playerPage, "Hitbox Size", 1, 100, 5, function(v) hitboxSize = v end)
 
--- ESP
-createToggleRow(espPage, "ESP Player", "Highlight + tên + khoảng cách", false, "ESP Player")
+-- ESP (2 toggle riêng)
+createToggleRow(espPage, "ESP Player", "Highlight + tên + @user + khoảng cách", false, "ESP Player")
+createToggleRow(espPage, "ESP Health", "Thanh máu nhỏ + số HP trên đầu", false, "ESP Health")
 
---==================================================
 --==================================================
 -- TELEPORTS — Player list (clean UI)
 --==================================================
 
-local tpPlayerRows = {} -- [player] = row frame
+local tpPlayerRows = {}
 local tpSearchQuery = ""
 
--- Search box
 local tpSearch = Instance.new("TextBox")
 tpSearch.Size = UDim2.new(1, -20, 0, 42)
 tpSearch.BackgroundColor3 = Color3.fromRGB(22, 29, 32)
@@ -671,7 +668,6 @@ local function tpMatchesSearch(plr)
     if tpSearchQuery == "" then
         return true
     end
-
     local q = tpSearchQuery:lower()
     return plr.Name:lower():find(q, 1, true) ~= nil
         or plr.DisplayName:lower():find(q, 1, true) ~= nil
@@ -704,7 +700,6 @@ local function createPlayerRow(plr)
     Stroke.Transparency = 0.45
     Stroke.Parent = Row
 
-    -- Player avatar
     local Avatar = Instance.new("ImageLabel")
     Avatar.Size = UDim2.fromOffset(42, 42)
     Avatar.Position = UDim2.fromOffset(9, 8)
@@ -724,7 +719,6 @@ local function createPlayerRow(plr)
         )
     end)
 
-    -- Display name
     local DisplayName = Instance.new("TextLabel")
     DisplayName.Size = UDim2.new(1, -145, 0, 23)
     DisplayName.Position = UDim2.fromOffset(61, 7)
@@ -737,7 +731,6 @@ local function createPlayerRow(plr)
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
     DisplayName.Parent = Row
 
-    -- Username
     local Username = Instance.new("TextLabel")
     Username.Size = UDim2.new(1, -145, 0, 18)
     Username.Position = UDim2.fromOffset(61, 31)
@@ -750,7 +743,6 @@ local function createPlayerRow(plr)
     Username.TextTruncate = Enum.TextTruncate.AtEnd
     Username.Parent = Row
 
-    -- Compact teleport button
     local TeleBtn = Instance.new("TextButton")
     TeleBtn.Size = UDim2.fromOffset(72, 36)
     TeleBtn.Position = UDim2.new(1, -82, 0.5, -18)
@@ -829,14 +821,13 @@ Players.PlayerRemoving:Connect(function(plr)
 end)
 
 --==================================================
--- SETTINGS — HOP SERVER
+-- SETTINGS — HOP SERVER + Auto Protect HP
 --==================================================
 
 local HOPPING = false
 local MAX_PLAYERS = 2
 local MAX_SERVER_PAGES = 10
 
--- AUTO PROTECT — adjustable HP trigger
 local autoProtectPercent = 10
 local AUTO_PROTECT_THRESHOLD = autoProtectPercent / 100
 
@@ -1376,99 +1367,37 @@ Player.CharacterAdded:Connect(function()
 end)
 
 --==================================================
--- HITBOX PLAYER
---==================================================
-
-local hitboxData = {}
-
-local function removeHitbox(plr)
-    local hb = hitboxData[plr]
-    if hb and hb.Parent then hb:Destroy() end
-    hitboxData[plr] = nil
-end
-
-local function createHitbox(plr)
-    if plr == Player then return end
-    if hitboxData[plr] and hitboxData[plr].Parent then return end
-
-    local char = plr.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local hb = Instance.new("Part")
-    hb.Name = "PhuHitbox"
-    hb.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-    hb.Transparency = 1
-    hb.CanCollide = false
-    hb.CanQuery = true
-    hb.CanTouch = true
-    hb.Massless = true
-    hb.Anchored = false
-    hb.Shape = Enum.PartType.Ball
-    hb.CFrame = hrp.CFrame
-    hb.Parent = char
-
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = hrp
-    weld.Part1 = hb
-    weld.Parent = hb
-
-    hitboxData[plr] = hb
-end
-
-local function removeAllHitboxes()
-    for plr, _ in pairs(hitboxData) do
-        removeHitbox(plr)
-    end
-end
-
-spawn(function()
-    while true do
-        task.wait(0.2)
-        if toggleStates["Hitbox Player"] then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= Player and not (hitboxData[plr] and hitboxData[plr].Parent) then
-                    createHitbox(plr)
-                end
-            end
-            for _, hb in pairs(hitboxData) do
-                if hb and hb.Parent then
-                    hb.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                end
-            end
-        else
-            removeAllHitboxes()
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function(char)
-        char:WaitForChild("HumanoidRootPart", 5)
-        if toggleStates["Hitbox Player"] then
-            createHitbox(plr)
-        end
-    end)
-end)
-
-Players.PlayerRemoving:Connect(function(plr)
-    removeHitbox(plr)
-end)
-
---==================================================
--- ESP PLAYER
+-- ESP PLAYER + ESP HEALTH (2 tính năng riêng)
 --==================================================
 
 local espData = {}
 
-local function createESP(plr)
+local function clearESPRecord(plr)
+    local data = espData[plr]
+    if not data then return end
+    if data.highlight then pcall(function() data.highlight:Destroy() end) end
+    if data.nameBillboard then pcall(function() data.nameBillboard:Destroy() end) end
+    if data.healthBillboard then pcall(function() data.healthBillboard:Destroy() end) end
+    espData[plr] = nil
+end
+
+local function buildESP(plr)
     if plr == Player then return end
-    if espData[plr] then return end
 
     local char = plr.Character
     if not char then return end
 
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local head = char:FindFirstChild("Head") or root
+    if not hum or not root or not head then return end
+
+    if espData[plr] and espData[plr].character ~= char then
+        clearESPRecord(plr)
+    end
+    if espData[plr] then return end
+
+    -- Highlight (ESP Player)
     local hl = Instance.new("Highlight")
     hl.Name = "PhuHubHL"
     hl.FillColor = Color3.fromRGB(255, 50, 50)
@@ -1478,118 +1407,263 @@ local function createESP(plr)
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     hl.Adornee = char
     hl.Parent = char
+    hl.Enabled = toggleStates["ESP Player"]
 
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "PhuHubBB"
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-    billboard.Parent = char
+    -- Name billboard (ESP Player)
+    local nameBB = Instance.new("BillboardGui")
+    nameBB.Name = "PhuHubNameBB"
+    nameBB.Size = UDim2.fromOffset(180, 42)
+    nameBB.StudsOffset = Vector3.new(0, 3.2, 0)
+    nameBB.AlwaysOnTop = true
+    nameBB.Adornee = head
+    nameBB.Enabled = toggleStates["ESP Player"]
+    nameBB.Parent = char
 
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 22)
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = plr.Name
+    nameLabel.Text = plr.DisplayName
     nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     nameLabel.TextStrokeTransparency = 0
-    nameLabel.TextSize = 14
+    nameLabel.TextSize = 13
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Parent = billboard
+    nameLabel.Parent = nameBB
+
+    local userLabel = Instance.new("TextLabel")
+    userLabel.Size = UDim2.new(1, 0, 0, 14)
+    userLabel.Position = UDim2.fromOffset(0, 19)
+    userLabel.BackgroundTransparency = 1
+    userLabel.Text = "@" .. plr.Name
+    userLabel.TextColor3 = Color3.fromRGB(190, 198, 200)
+    userLabel.TextStrokeTransparency = 0.2
+    userLabel.TextSize = 10
+    userLabel.Font = Enum.Font.Gotham
+    userLabel.Parent = nameBB
 
     local distLabel = Instance.new("TextLabel")
-    distLabel.Size = UDim2.new(1, 0, 0, 18)
-    distLabel.Position = UDim2.new(0, 0, 0, 22)
+    distLabel.Size = UDim2.new(1, 0, 0, 13)
+    distLabel.Position = UDim2.fromOffset(0, 32)
     distLabel.BackgroundTransparency = 1
     distLabel.Text = "0m"
     distLabel.TextColor3 = Color3.fromRGB(45, 220, 135)
-    distLabel.TextStrokeTransparency = 0
-    distLabel.TextSize = 12
+    distLabel.TextStrokeTransparency = 0.3
+    distLabel.TextSize = 10
     distLabel.Font = Enum.Font.GothamSemibold
-    distLabel.Parent = billboard
+    distLabel.Parent = nameBB
 
-    espData[plr] = {highlight = hl, billboard = billboard, distLabel = distLabel}
+    -- Health billboard (ESP Health) — NHỎ
+    local hpBB = Instance.new("BillboardGui")
+    hpBB.Name = "PhuHubHealthBB"
+    hpBB.Size = UDim2.fromOffset(110, 24)
+    hpBB.StudsOffset = Vector3.new(0, 2.2, 0)
+    hpBB.AlwaysOnTop = true
+    hpBB.Adornee = head
+    hpBB.Enabled = toggleStates["ESP Health"]
+    hpBB.Parent = char
+
+    local hpBack = Instance.new("Frame")
+    hpBack.Size = UDim2.new(1, -10, 0, 6)
+    hpBack.Position = UDim2.fromOffset(5, 4)
+    hpBack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    hpBack.BorderSizePixel = 0
+    hpBack.Parent = hpBB
+
+    local hpBackCorner = Instance.new("UICorner")
+    hpBackCorner.CornerRadius = UDim.new(1, 0)
+    hpBackCorner.Parent = hpBack
+
+    local hpBackStroke = Instance.new("UIStroke")
+    hpBackStroke.Color = Color3.fromRGB(0, 0, 0)
+    hpBackStroke.Thickness = 1
+    hpBackStroke.Transparency = 0.3
+    hpBackStroke.Parent = hpBack
+
+    local hpFill = Instance.new("Frame")
+    hpFill.Size = UDim2.new(1, 0, 1, 0)
+    hpFill.BackgroundColor3 = Color3.fromRGB(45, 220, 135)
+    hpFill.BorderSizePixel = 0
+    hpFill.Parent = hpBack
+
+    local hpFillCorner = Instance.new("UICorner")
+    hpFillCorner.CornerRadius = UDim.new(1, 0)
+    hpFillCorner.Parent = hpFill
+
+    local hpText = Instance.new("TextLabel")
+    hpText.Size = UDim2.new(1, 0, 0, 12)
+    hpText.Position = UDim2.fromOffset(0, 11)
+    hpText.BackgroundTransparency = 1
+    hpText.Text = "100%"
+    hpText.TextColor3 = Color3.fromRGB(240, 245, 245)
+    hpText.TextStrokeTransparency = 0
+    hpText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    hpText.TextSize = 10
+    hpText.Font = Enum.Font.GothamBold
+    hpText.Parent = hpBB
+
+    espData[plr] = {
+        character = char,
+        humanoid = hum,
+        highlight = hl,
+        nameBillboard = nameBB,
+        healthBillboard = hpBB,
+        hpFill = hpFill,
+        hpText = hpText,
+        nameLabel = nameLabel,
+        userLabel = userLabel,
+        distLabel = distLabel,
+    }
 end
 
 local function removeESP(plr)
-    local data = espData[plr]
-    if not data then return end
-    if data.highlight then data.highlight:Destroy() end
-    if data.billboard then data.billboard:Destroy() end
-    espData[plr] = nil
+    clearESPRecord(plr)
 end
 
 local function removeAllESP()
-    for plr, _ in pairs(espData) do
-        removeESP(plr)
+    for plr in pairs(espData) do
+        clearESPRecord(plr)
+    end
+end
+
+local function refreshESP(plr, data)
+    local char = plr.Character
+    if not char or char ~= data.character then return end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local head = char:FindFirstChild("Head") or hrp
+    local hum = data.humanoid
+
+    if data.highlight then
+        data.highlight.Adornee = char
+    end
+    if data.nameBillboard and data.nameBillboard.Adornee ~= head then
+        data.nameBillboard.Adornee = head
+    end
+    if data.healthBillboard and data.healthBillboard.Adornee ~= head then
+        data.healthBillboard.Adornee = head
+    end
+
+    if data.nameLabel then
+        data.nameLabel.Text = plr.DisplayName
+    end
+    if data.userLabel then
+        data.userLabel.Text = "@" .. plr.Name
+    end
+
+    if data.distLabel and hrp then
+        local localRoot = getLocalRoot()
+        if localRoot then
+            local dist = (hrp.Position - localRoot.Position).Magnitude
+            data.distLabel.Text = string.format("%dm", math.floor(dist))
+        end
+    end
+
+    if hum and hum.Parent then
+        local maxHealth = math.max(hum.MaxHealth, 1)
+        local health = math.clamp(hum.Health, 0, maxHealth)
+        local percent = health / maxHealth
+
+        if data.hpFill then
+            data.hpFill.Size = UDim2.new(percent, 0, 1, 0)
+            if percent <= 0.25 then
+                data.hpFill.BackgroundColor3 = Color3.fromRGB(235, 65, 65)
+            elseif percent <= 0.5 then
+                data.hpFill.BackgroundColor3 = Color3.fromRGB(240, 185, 55)
+            else
+                data.hpFill.BackgroundColor3 = Color3.fromRGB(45, 220, 135)
+            end
+        end
+
+        if data.hpText then
+            data.hpText.Text = string.format(
+                "%d/%d  •  %d%%",
+                math.floor(health + 0.5),
+                math.floor(maxHealth + 0.5),
+                math.floor(percent * 100 + 0.5)
+            )
+        end
     end
 end
 
 RunService.RenderStepped:Connect(function()
-    if not toggleStates["ESP Player"] then return end
-    local localRoot = getLocalRoot()
-    if not localRoot then return end
+    local espPlayerOn = toggleStates["ESP Player"]
+    local espHealthOn = toggleStates["ESP Health"]
+
+    if not espPlayerOn and not espHealthOn then
+        if next(espData) then
+            removeAllESP()
+        end
+        return
+    end
+
     for plr, data in pairs(espData) do
         local char = plr.Character
-        if not char then
-            removeESP(plr)
+        if not char or char ~= data.character then
+            clearESPRecord(plr)
+            if char then
+                buildESP(plr)
+            end
         else
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp and data.distLabel then
-                local dist = (hrp.Position - localRoot.Position).Magnitude
-                data.distLabel.Text = string.format("%dm", math.floor(dist))
+            if data.highlight then
+                data.highlight.Enabled = espPlayerOn
             end
-            if data.highlight and data.highlight.Adornee ~= char then
-                data.highlight.Adornee = char
+            if data.nameBillboard then
+                data.nameBillboard.Enabled = espPlayerOn
             end
-            local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-            if data.billboard and data.billboard.Adornee ~= head then
-                data.billboard.Adornee = head
+            if data.healthBillboard then
+                data.healthBillboard.Enabled = espHealthOn
+            end
+
+            if espPlayerOn or espHealthOn then
+                refreshESP(plr, data)
             end
         end
     end
 end)
 
-spawn(function()
+task.spawn(function()
     while true do
-        wait(0.3)
-        if toggleStates["ESP Player"] then
+        task.wait(0.3)
+
+        if toggleStates["ESP Player"] or toggleStates["ESP Health"] then
             for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= Player and not espData[plr] then
-                    createESP(plr)
+                if plr ~= Player then
+                    local data = espData[plr]
+                    if not data or data.character ~= plr.Character then
+                        buildESP(plr)
+                    end
                 end
             end
-        else
-            removeAllESP()
         end
     end
 end)
 
 Players.PlayerAdded:Connect(function(plr)
     plr.CharacterAdded:Connect(function(char)
-        char:WaitForChild("HumanoidRootPart", 5)
-        if toggleStates["ESP Player"] then
-            createESP(plr)
+        clearESPRecord(plr)
+        char:WaitForChild("HumanoidRootPart", 10)
+        char:WaitForChild("Humanoid", 10)
+        task.wait(0.1)
+        if toggleStates["ESP Player"] or toggleStates["ESP Health"] then
+            buildESP(plr)
         end
     end)
-    if plr.Character and toggleStates["ESP Player"] then
-        createESP(plr)
+
+    if plr.Character and (toggleStates["ESP Player"] or toggleStates["ESP Health"]) then
+        task.defer(buildESP, plr)
     end
 end)
 
 Players.PlayerRemoving:Connect(function(plr)
-    removeESP(plr)
+    clearESPRecord(plr)
 end)
 
 --==================================================
 -- AUTO KILL
 --==================================================
 
--- Auto Protect shared state (declared before movement loops so they can yield to protection)
 local autoProtecting = false
 local autoProtectSavedCFrame = nil
 local autoProtectSavedCharacter = nil
-
 
 local function getNearestPlayer()
     local localRoot = getLocalRoot()
@@ -1654,24 +1728,24 @@ local function startAutoKill()
         while autoKillRunning and toggleStates["Auto Kill"] do
             if autoProtecting then
                 wait(0.05)
-                continue
-            end
-            local target = getNearestPlayer()
-            if target then
-                local targetChar = target.Character
-                local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                local targetHum = targetChar and targetChar:FindFirstChild("Humanoid")
-                local localRoot = getLocalRoot()
-                if targetRoot and targetHum and targetHum.Health > 0 and localRoot then
-                    local behind = -targetRoot.CFrame.LookVector * 5
-                    localRoot.CFrame = CFrame.new(targetRoot.Position + behind + Vector3.new(0, 2, 0), targetRoot.Position)
-                    localRoot.Velocity = Vector3.zero
-                    localRoot.AssemblyLinearVelocity = Vector3.zero
-                    activateCurrentTool()
-                    pcall(function() targetHum:TakeDamage(15) end)
+            else
+                local target = getNearestPlayer()
+                if target then
+                    local targetChar = target.Character
+                    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+                    local targetHum = targetChar and targetChar:FindFirstChild("Humanoid")
+                    local localRoot = getLocalRoot()
+                    if targetRoot and targetHum and targetHum.Health > 0 and localRoot then
+                        local behind = -targetRoot.CFrame.LookVector * 5
+                        localRoot.CFrame = CFrame.new(targetRoot.Position + behind + Vector3.new(0, 2, 0), targetRoot.Position)
+                        localRoot.Velocity = Vector3.zero
+                        localRoot.AssemblyLinearVelocity = Vector3.zero
+                        activateCurrentTool()
+                        pcall(function() targetHum:TakeDamage(15) end)
+                    end
                 end
+                wait(0.02)
             end
-            wait(0.02)
         end
         autoKillRunning = false
     end)
@@ -1881,53 +1955,53 @@ local function startAutoEat()
         while autoEatRunning and toggleStates["Auto Eat"] do
             if autoProtecting then
                 wait(0.05)
-                continue
-            end
-            local localRoot = getLocalRoot()
-            if not localRoot then
-                wait(0.2)
             else
-                if not currentMeat or not currentMeat.Parent then
-                    currentMeat = nil
-                    local meats = findMeats()
-                    if #meats > 0 then
-                        currentMeat = findNearestMeat(meats)
-                    end
-                end
-
-                if currentMeat and currentMeat.Parent then
-                    localRoot.CFrame = CFrame.new(currentMeat.Position + Vector3.new(0, 2, 0))
-                    localRoot.Velocity = Vector3.zero
-
-                    local prompt = getNearestPrompt(currentMeat.Position, 30)
-                    if prompt then
-                        triggerPrompt(prompt)
+                local localRoot = getLocalRoot()
+                if not localRoot then
+                    wait(0.2)
+                else
+                    if not currentMeat or not currentMeat.Parent then
+                        currentMeat = nil
+                        local meats = findMeats()
+                        if #meats > 0 then
+                            currentMeat = findNearestMeat(meats)
+                        end
                     end
 
-                    local char = Player.Character
-                    if char then
-                        for _, p in ipairs(char:GetDescendants()) do
-                            if p:IsA("BasePart") then
-                                if type(firetouchinterest) == "function" then
-                                    pcall(firetouchinterest, p, currentMeat, 0)
-                                    pcall(firetouchinterest, p, currentMeat, 1)
+                    if currentMeat and currentMeat.Parent then
+                        localRoot.CFrame = CFrame.new(currentMeat.Position + Vector3.new(0, 2, 0))
+                        localRoot.Velocity = Vector3.zero
+
+                        local prompt = getNearestPrompt(currentMeat.Position, 30)
+                        if prompt then
+                            triggerPrompt(prompt)
+                        end
+
+                        local char = Player.Character
+                        if char then
+                            for _, p in ipairs(char:GetDescendants()) do
+                                if p:IsA("BasePart") then
+                                    if type(firetouchinterest) == "function" then
+                                        pcall(firetouchinterest, p, currentMeat, 0)
+                                        pcall(firetouchinterest, p, currentMeat, 1)
+                                    end
                                 end
                             end
                         end
-                    end
 
-                    for _, d in ipairs(currentMeat:GetDescendants()) do
-                        if d:IsA("ClickDetector") then
-                            if type(fireclickdetector) == "function" then
-                                pcall(fireclickdetector, d)
+                        for _, d in ipairs(currentMeat:GetDescendants()) do
+                            if d:IsA("ClickDetector") then
+                                if type(fireclickdetector) == "function" then
+                                    pcall(fireclickdetector, d)
+                                end
                             end
                         end
-                    end
 
-                    pressKey(Enum.KeyCode.E)
+                        pressKey(Enum.KeyCode.E)
+                    end
                 end
+                wait(0.05)
             end
-            wait(0.05)
         end
         autoEatRunning = false
     end)
@@ -1937,7 +2011,8 @@ end
 -- AUTO PROTECT
 --==================================================
 
-local AUTO_PROTECT_HEIGHT = 300 -- độ cao an toàn trên vị trí hiện tại
+local AUTO_PROTECT_HEIGHT = 300
+
 local function stopAutoProtect()
     autoProtecting = false
     autoProtectSavedCFrame = nil
@@ -1959,7 +2034,6 @@ RunService.Heartbeat:Connect(function()
         return
     end
 
-    -- Character respawned: discard the old saved position.
     if autoProtectSavedCharacter and autoProtectSavedCharacter ~= char then
         autoProtecting = false
         autoProtectSavedCFrame = nil
@@ -1968,7 +2042,6 @@ RunService.Heartbeat:Connect(function()
 
     local healthRatio = hum.Health / hum.MaxHealth
 
-    -- Trigger exactly when health reaches 10% or lower.
     if not autoProtecting and hum.Health > 0 and healthRatio <= AUTO_PROTECT_THRESHOLD then
         autoProtectSavedCFrame = root.CFrame
         autoProtectSavedCharacter = char
@@ -1976,7 +2049,6 @@ RunService.Heartbeat:Connect(function()
     end
 
     if autoProtecting then
-        -- Stay completely still in the sky while regenerating.
         local skyCFrame = CFrame.new(
             autoProtectSavedCFrame.Position + Vector3.new(0, AUTO_PROTECT_HEIGHT, 0)
         ) * CFrame.fromMatrix(
@@ -1989,7 +2061,6 @@ RunService.Heartbeat:Connect(function()
         root.AssemblyLinearVelocity = Vector3.zero
         root.AssemblyAngularVelocity = Vector3.zero
 
-        -- Return only after the health bar is full.
         if hum.Health >= hum.MaxHealth - 0.01 then
             root.CFrame = autoProtectSavedCFrame
             root.AssemblyLinearVelocity = Vector3.zero
@@ -2027,6 +2098,7 @@ spawn(function()
             autoEatRunning = false
             currentMeat = nil
         end
+
         if not toggleStates["Auto Protect"] and autoProtecting then
             stopAutoProtect()
         end
@@ -2034,11 +2106,7 @@ spawn(function()
 end)
 
 --==================================================
--- AUTO SHOW MENU
---==================================================
-
---==================================================
--- SUBSCRIBE GATE — hiển thị trước menu
+-- SUBSCRIBE GATE
 --==================================================
 
 Main.Visible = false
