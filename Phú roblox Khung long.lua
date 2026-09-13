@@ -3,6 +3,7 @@
     itipati! Primeval Earth | Dinosaur
     Auto Kill + Auto Ownership + Auto Eat + Auto Protect
     + Speed + Jump + Fly + ESP Player + ESP Health + Hop + Teleport Player
+    + SAVE/LOAD CONFIG
     Mobile + PC (Potassium / Delta / Xeno / Solara) Support
 ]]
 
@@ -30,6 +31,59 @@ pcall(function()
     end
 end)
 
+--==================================================
+-- SAVE/LOAD CONFIG
+--==================================================
+
+local CONFIG_FILE = "PhuRobloxHub_Config.json"
+local CONFIG_FILE_ALT = "PhuRobloxHub_Config.txt"
+
+local function readFile(name)
+    if type(readfile) == "function" then
+        local ok, res = pcall(readfile, name)
+        if ok and res then return res end
+    end
+    return nil
+end
+
+local function writeFile(name, content)
+    if type(writefile) == "function" then
+        return pcall(writefile, name, content)
+    end
+    return false
+end
+
+local function loadConfig()
+    local data = readFile(CONFIG_FILE) or readFile(CONFIG_FILE_ALT)
+    if not data then return nil end
+    local ok, decoded = pcall(function()
+        return HttpService:JSONDecode(data)
+    end)
+    if ok and type(decoded) == "table" then return decoded end
+    return nil
+end
+
+local function saveConfig(tbl)
+    local ok, encoded = pcall(function()
+        return HttpService:JSONEncode(tbl)
+    end)
+    if not ok or not encoded then return end
+    if not writeFile(CONFIG_FILE, encoded) then
+        writeFile(CONFIG_FILE_ALT, encoded)
+    end
+end
+
+local SavedConfig = loadConfig() or {}
+
+local function getSaved(key, default)
+    if SavedConfig[key] ~= nil then return SavedConfig[key] end
+    return default
+end
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
 local function getSafeGuiParent()
     local ok, cg = pcall(function() return game:GetService("CoreGui") end)
     if ok and cg then
@@ -55,15 +109,12 @@ for _, parent in ipairs({Player:FindFirstChild("PlayerGui"), (pcall(function() r
     end
 end
 
---==================================================
--- SCREEN GUI
---==================================================
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PrimevalEarth_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() ScreenGui.DisplayOrder = 999 end)
 pcall(function() ScreenGui.Parent = GuiParent end)
 if not ScreenGui.Parent then
     ScreenGui.Parent = Player:WaitForChild("PlayerGui")
@@ -105,6 +156,7 @@ LogoToggle.ImageColor3 = Color3.fromRGB(255, 255, 255)
 LogoToggle.ScaleType = Enum.ScaleType.Fit
 LogoToggle.AutoButtonColor = false
 LogoToggle.Active = true
+LogoToggle.ZIndex = 500
 LogoToggle.Parent = ScreenGui
 
 local LogoCorner = Instance.new("UICorner")
@@ -176,6 +228,7 @@ Main.AnchorPoint = Vector2.new(0.5, 0.5)
 Main.BackgroundColor3 = Color3.fromRGB(12, 17, 19)
 Main.BorderSizePixel = 0
 Main.Visible = false
+Main.ZIndex = 400
 Main.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -196,6 +249,7 @@ local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 75)
 Header.BackgroundColor3 = Color3.fromRGB(8, 12, 13)
 Header.BorderSizePixel = 0
+Header.ZIndex = 401
 Header.Parent = Main
 
 local HeaderCorner = Instance.new("UICorner")
@@ -209,6 +263,7 @@ DinoIcon.BackgroundTransparency = 1
 DinoIcon.Text = "🦖"
 DinoIcon.TextSize = 34
 DinoIcon.Font = Enum.Font.GothamBold
+DinoIcon.ZIndex = 402
 DinoIcon.Parent = Header
 
 local Title = Instance.new("TextLabel")
@@ -220,6 +275,7 @@ Title.TextColor3 = Color3.fromRGB(245, 245, 245)
 Title.TextSize = 21
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 402
 Title.Parent = Header
 
 local SubTitle = Instance.new("TextLabel")
@@ -231,6 +287,7 @@ SubTitle.TextColor3 = Color3.fromRGB(145, 155, 158)
 SubTitle.TextSize = 13
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.ZIndex = 402
 SubTitle.Parent = Header
 
 local Close = Instance.new("TextButton")
@@ -241,6 +298,7 @@ Close.Text = "×"
 Close.TextColor3 = Color3.fromRGB(230, 230, 230)
 Close.TextSize = 30
 Close.Font = Enum.Font.Gotham
+Close.ZIndex = 402
 Close.Parent = Header
 
 Close.MouseButton1Click:Connect(function()
@@ -256,6 +314,7 @@ Minimize.Text = "—"
 Minimize.TextColor3 = Color3.fromRGB(230, 230, 230)
 Minimize.TextSize = 25
 Minimize.Font = Enum.Font.Gotham
+Minimize.ZIndex = 402
 Minimize.Parent = Header
 
 --==================================================
@@ -310,6 +369,7 @@ Sidebar.Size = UDim2.new(0, 215, 1, -75)
 Sidebar.Position = UDim2.fromOffset(0, 75)
 Sidebar.BackgroundColor3 = Color3.fromRGB(11, 16, 18)
 Sidebar.BorderSizePixel = 0
+Sidebar.ZIndex = 401
 Sidebar.Parent = Main
 
 local SidebarList = Instance.new("UIListLayout")
@@ -327,6 +387,7 @@ Content.Size = UDim2.new(1, -215, 1, -75)
 Content.Position = UDim2.fromOffset(215, 75)
 Content.BackgroundColor3 = Color3.fromRGB(14, 19, 21)
 Content.BorderSizePixel = 0
+Content.ZIndex = 401
 Content.Parent = Main
 
 local ContentTitle = Instance.new("TextLabel")
@@ -338,6 +399,7 @@ ContentTitle.TextColor3 = Color3.fromRGB(245, 245, 245)
 ContentTitle.TextSize = 25
 ContentTitle.Font = Enum.Font.GothamBold
 ContentTitle.TextXAlignment = Enum.TextXAlignment.Left
+ContentTitle.ZIndex = 402
 ContentTitle.Parent = Content
 
 local ContentScroll = Instance.new("ScrollingFrame")
@@ -349,6 +411,7 @@ ContentScroll.ScrollBarThickness = 3
 ContentScroll.ScrollBarImageColor3 = Color3.fromRGB(45, 220, 135)
 ContentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 ContentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ContentScroll.ZIndex = 402
 ContentScroll.Parent = Content
 
 local ContentLayout = Instance.new("UIListLayout")
@@ -367,6 +430,7 @@ local function createPage(name)
     f.AutomaticSize = Enum.AutomaticSize.Y
     f.BackgroundTransparency = 1
     f.Visible = false
+    f.ZIndex = 403
     f.Parent = ContentScroll
 
     local layout = Instance.new("UIListLayout")
@@ -378,13 +442,38 @@ local function createPage(name)
     return f
 end
 
+--==================================================
+-- TOGGLE STATES + SAVE QUEUE
+--==================================================
+
 local toggleStates = {}
+local sliderStates = {}
+local SaveQueued = false
+
+local function queueSave()
+    if SaveQueued then return end
+    SaveQueued = true
+    task.delay(0.5, function()
+        SaveQueued = false
+        local data = {}
+        for k, v in pairs(toggleStates) do
+            data["t_" .. k] = v
+        end
+        for k, v in pairs(sliderStates) do
+            data["s_" .. k] = v
+        end
+        saveConfig(data)
+    end)
+end
 
 local function createToggleRow(parent, title, description, default, key)
+    local saved = getSaved("t_" .. key, default)
+
     local Row = Instance.new("Frame")
     Row.Size = UDim2.new(1, -20, 0, 62)
     Row.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
     Row.BorderSizePixel = 0
+    Row.ZIndex = 404
     Row.Parent = parent
 
     local Corner = Instance.new("UICorner")
@@ -400,6 +489,7 @@ local function createToggleRow(parent, title, description, default, key)
     Name.TextSize = 16
     Name.Font = Enum.Font.GothamMedium
     Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.ZIndex = 405
     Name.Parent = Row
 
     local Desc = Instance.new("TextLabel")
@@ -411,13 +501,15 @@ local function createToggleRow(parent, title, description, default, key)
     Desc.TextSize = 12
     Desc.Font = Enum.Font.Gotham
     Desc.TextXAlignment = Enum.TextXAlignment.Left
+    Desc.ZIndex = 405
     Desc.Parent = Row
 
     local Switch = Instance.new("Frame")
     Switch.Size = UDim2.fromOffset(60, 32)
     Switch.Position = UDim2.new(1, -72, 0.5, -16)
-    Switch.BackgroundColor3 = default and Color3.fromRGB(35, 190, 110) or Color3.fromRGB(65, 76, 82)
+    Switch.BackgroundColor3 = saved and Color3.fromRGB(35, 190, 110) or Color3.fromRGB(65, 76, 82)
     Switch.BorderSizePixel = 0
+    Switch.ZIndex = 405
     Switch.Parent = Row
 
     local SwitchCorner = Instance.new("UICorner")
@@ -426,9 +518,10 @@ local function createToggleRow(parent, title, description, default, key)
 
     local Circle = Instance.new("Frame")
     Circle.Size = UDim2.fromOffset(24, 24)
-    Circle.Position = default and UDim2.new(1, -28, 0.5, -12) or UDim2.fromOffset(4, 4)
+    Circle.Position = saved and UDim2.new(1, -28, 0.5, -12) or UDim2.fromOffset(4, 4)
     Circle.BackgroundColor3 = Color3.fromRGB(240, 245, 245)
     Circle.BorderSizePixel = 0
+    Circle.ZIndex = 406
     Circle.Parent = Switch
 
     local CircleCorner = Instance.new("UICorner")
@@ -439,9 +532,10 @@ local function createToggleRow(parent, title, description, default, key)
     ClickBtn.Size = UDim2.new(1, 0, 1, 0)
     ClickBtn.BackgroundTransparency = 1
     ClickBtn.Text = ""
+    ClickBtn.ZIndex = 407
     ClickBtn.Parent = Row
 
-    local enabled = default
+    local enabled = saved
     toggleStates[key] = enabled
 
     ClickBtn.MouseButton1Click:Connect(function()
@@ -454,16 +548,21 @@ local function createToggleRow(parent, title, description, default, key)
             Switch.BackgroundColor3 = Color3.fromRGB(65, 76, 82)
             Circle:TweenPosition(UDim2.fromOffset(4, 4), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
         end
+        queueSave()
     end)
 
     return Row
 end
 
 local function createSlider(parent, title, min, max, default, callback)
+    local saved = getSaved("s_" .. title, default)
+    saved = math.clamp(tonumber(saved) or default, min, max)
+
     local Holder = Instance.new("Frame")
     Holder.Size = UDim2.new(1, -20, 0, 72)
     Holder.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
     Holder.BorderSizePixel = 0
+    Holder.ZIndex = 404
     Holder.Parent = parent
 
     local Corner = Instance.new("UICorner")
@@ -474,11 +573,12 @@ local function createSlider(parent, title, min, max, default, callback)
     Label.Size = UDim2.new(1, -20, 0, 22)
     Label.Position = UDim2.fromOffset(14, 6)
     Label.BackgroundTransparency = 1
-    Label.Text = title .. ": " .. tostring(default)
+    Label.Text = title .. ": " .. string.format("%.1f", saved)
     Label.TextColor3 = Color3.fromRGB(240, 240, 240)
     Label.TextSize = 14
     Label.Font = Enum.Font.GothamMedium
     Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.ZIndex = 405
     Label.Parent = Holder
 
     local Bar = Instance.new("Frame")
@@ -486,6 +586,7 @@ local function createSlider(parent, title, min, max, default, callback)
     Bar.Position = UDim2.fromOffset(14, 42)
     Bar.BackgroundColor3 = Color3.fromRGB(45, 55, 60)
     Bar.BorderSizePixel = 0
+    Bar.ZIndex = 405
     Bar.Parent = Holder
 
     local BarCorner = Instance.new("UICorner")
@@ -493,9 +594,10 @@ local function createSlider(parent, title, min, max, default, callback)
     BarCorner.Parent = Bar
 
     local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    Fill.Size = UDim2.new((saved - min) / (max - min), 0, 1, 0)
     Fill.BackgroundColor3 = Color3.fromRGB(35, 190, 110)
     Fill.BorderSizePixel = 0
+    Fill.ZIndex = 406
     Fill.Parent = Bar
 
     local FillCorner = Instance.new("UICorner")
@@ -505,9 +607,10 @@ local function createSlider(parent, title, min, max, default, callback)
     local Knob = Instance.new("Frame")
     Knob.Size = UDim2.fromOffset(18, 18)
     Knob.AnchorPoint = Vector2.new(0.5, 0.5)
-    Knob.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
+    Knob.Position = UDim2.new((saved - min) / (max - min), 0, 0.5, 0)
     Knob.BackgroundColor3 = Color3.fromRGB(240, 245, 245)
     Knob.BorderSizePixel = 0
+    Knob.ZIndex = 407
     Knob.Parent = Bar
 
     local KnobCorner = Instance.new("UICorner")
@@ -515,21 +618,23 @@ local function createSlider(parent, title, min, max, default, callback)
     KnobCorner.Parent = Knob
 
     local draggingBar = false
-    local value = default
+    local value = saved
 
-    local function setValue(v)
+    local function setValue(v, save)
         value = math.clamp(v, min, max)
         local pct = (value - min) / (max - min)
         Fill.Size = UDim2.new(pct, 0, 1, 0)
         Knob.Position = UDim2.new(pct, 0, 0.5, 0)
         Label.Text = title .. ": " .. string.format("%.1f", value)
+        sliderStates[title] = value
         if callback then callback(value) end
+        if save then queueSave() end
     end
 
     local function handleInput(input)
         local pos = input.Position.X - Bar.AbsolutePosition.X
         local pct = math.clamp(pos / Bar.AbsoluteSize.X, 0, 1)
-        setValue(min + pct * (max - min))
+        setValue(min + pct * (max - min), false)
     end
 
     Bar.InputBegan:Connect(function(input)
@@ -550,11 +655,14 @@ local function createSlider(parent, title, min, max, default, callback)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
-            draggingBar = false
+            if draggingBar then
+                draggingBar = false
+                queueSave()
+            end
         end
     end)
 
-    setValue(default)
+    setValue(saved, false)
     return Holder
 end
 
@@ -576,9 +684,9 @@ createToggleRow(mainPage, "Auto Eat", "Tele tới Meat + Eat", false, "Auto Eat"
 createToggleRow(mainPage, "Auto Protect", "≤ HP ngưỡng → tele lên trời, đứng im, đầy máu → về chỗ cũ", false, "Auto Protect")
 
 -- PLAYER
-local speedValue = 50
-local jumpValue = 120
-local flySpeed = 150
+local speedValue = getSaved("s_WalkSpeed", 50)
+local jumpValue = getSaved("s_JumpPower", 120)
+local flySpeed = getSaved("s_Fly Speed", 150)
 
 createToggleRow(playerPage, "Speed Enabled", "Auto apply WalkSpeed (fix underwater)", false, "Speed Enabled")
 createToggleRow(playerPage, "Jump Enabled", "Auto apply JumpPower", false, "Jump Enabled")
@@ -588,12 +696,12 @@ createSlider(playerPage, "WalkSpeed", 16, 500, 50, function(v) speedValue = v en
 createSlider(playerPage, "JumpPower", 50, 500, 120, function(v) jumpValue = v end)
 createSlider(playerPage, "Fly Speed", 10, 800, 150, function(v) flySpeed = v end)
 
--- ESP (2 toggle riêng)
+-- ESP
 createToggleRow(espPage, "ESP Player", "Highlight + tên + @user + khoảng cách", false, "ESP Player")
 createToggleRow(espPage, "ESP Health", "Thanh máu nhỏ + số HP trên đầu", false, "ESP Health")
 
 --==================================================
--- TELEPORTS — Player list (clean UI)
+-- TELEPORTS
 --==================================================
 
 local tpPlayerRows = {}
@@ -611,6 +719,7 @@ tpSearch.TextSize = 14
 tpSearch.Font = Enum.Font.Gotham
 tpSearch.TextXAlignment = Enum.TextXAlignment.Left
 tpSearch.ClearTextOnFocus = false
+tpSearch.ZIndex = 404
 tpSearch.Parent = tpPage
 
 local tpSearchPadding = Instance.new("UIPadding")
@@ -632,6 +741,7 @@ local tpHeader = Instance.new("Frame")
 tpHeader.Size = UDim2.new(1, -20, 0, 46)
 tpHeader.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
 tpHeader.BorderSizePixel = 0
+tpHeader.ZIndex = 404
 tpHeader.Parent = tpPage
 
 local tpHeaderCorner = Instance.new("UICorner")
@@ -647,6 +757,7 @@ tpHeaderLabel.TextColor3 = Color3.fromRGB(45, 220, 135)
 tpHeaderLabel.TextSize = 14
 tpHeaderLabel.Font = Enum.Font.GothamBold
 tpHeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+tpHeaderLabel.ZIndex = 405
 tpHeaderLabel.Parent = tpHeader
 
 local function teleportToPlayer(target)
@@ -665,9 +776,7 @@ local function teleportToPlayer(target)
 end
 
 local function tpMatchesSearch(plr)
-    if tpSearchQuery == "" then
-        return true
-    end
+    if tpSearchQuery == "" then return true end
     local q = tpSearchQuery:lower()
     return plr.Name:lower():find(q, 1, true) ~= nil
         or plr.DisplayName:lower():find(q, 1, true) ~= nil
@@ -688,6 +797,7 @@ local function createPlayerRow(plr)
     Row.Size = UDim2.new(1, -20, 0, 58)
     Row.BackgroundColor3 = Color3.fromRGB(22, 29, 32)
     Row.BorderSizePixel = 0
+    Row.ZIndex = 404
     Row.Parent = tpPage
 
     local Corner = Instance.new("UICorner")
@@ -705,6 +815,7 @@ local function createPlayerRow(plr)
     Avatar.Position = UDim2.fromOffset(9, 8)
     Avatar.BackgroundColor3 = Color3.fromRGB(35, 44, 47)
     Avatar.BorderSizePixel = 0
+    Avatar.ZIndex = 405
     Avatar.Parent = Row
 
     local AvatarCorner = Instance.new("UICorner")
@@ -729,6 +840,7 @@ local function createPlayerRow(plr)
     DisplayName.Font = Enum.Font.GothamMedium
     DisplayName.TextXAlignment = Enum.TextXAlignment.Left
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
+    DisplayName.ZIndex = 405
     DisplayName.Parent = Row
 
     local Username = Instance.new("TextLabel")
@@ -741,6 +853,7 @@ local function createPlayerRow(plr)
     Username.Font = Enum.Font.Gotham
     Username.TextXAlignment = Enum.TextXAlignment.Left
     Username.TextTruncate = Enum.TextTruncate.AtEnd
+    Username.ZIndex = 405
     Username.Parent = Row
 
     local TeleBtn = Instance.new("TextButton")
@@ -753,6 +866,7 @@ local function createPlayerRow(plr)
     TeleBtn.TextSize = 14
     TeleBtn.Font = Enum.Font.GothamBold
     TeleBtn.AutoButtonColor = false
+    TeleBtn.ZIndex = 406
     TeleBtn.Parent = Row
 
     local TeleCorner = Instance.new("UICorner")
@@ -821,17 +935,17 @@ Players.PlayerRemoving:Connect(function(plr)
 end)
 
 --==================================================
--- SETTINGS — HOP SERVER + Auto Protect HP
+-- SETTINGS
 --==================================================
 
 local HOPPING = false
 local MAX_PLAYERS = 2
 local MAX_SERVER_PAGES = 10
 
-local autoProtectPercent = 10
+local autoProtectPercent = getSaved("s_Auto Protect HP", 10)
 local AUTO_PROTECT_THRESHOLD = autoProtectPercent / 100
 
-createSlider(settingsPage, "Auto Protect HP (%)", 1, 100, autoProtectPercent, function(v)
+createSlider(settingsPage, "Auto Protect HP", 1, 100, autoProtectPercent, function(v)
     autoProtectPercent = math.floor(v + 0.5)
     AUTO_PROTECT_THRESHOLD = autoProtectPercent / 100
 end)
@@ -840,6 +954,7 @@ local StatusRow = Instance.new("Frame")
 StatusRow.Size = UDim2.new(1, -20, 0, 85)
 StatusRow.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
 StatusRow.BorderSizePixel = 0
+StatusRow.ZIndex = 404
 StatusRow.Parent = settingsPage
 
 local StatusRowCorner = Instance.new("UICorner")
@@ -855,6 +970,7 @@ PlayerCount.TextColor3 = Color3.fromRGB(240, 247, 255)
 PlayerCount.TextSize = 22
 PlayerCount.Font = Enum.Font.GothamBold
 PlayerCount.TextXAlignment = Enum.TextXAlignment.Left
+PlayerCount.ZIndex = 405
 PlayerCount.Parent = StatusRow
 
 local PlayerText = Instance.new("TextLabel")
@@ -866,6 +982,7 @@ PlayerText.TextColor3 = Color3.fromRGB(145, 153, 155)
 PlayerText.TextSize = 10
 PlayerText.Font = Enum.Font.GothamBold
 PlayerText.TextXAlignment = Enum.TextXAlignment.Left
+PlayerText.ZIndex = 405
 PlayerText.Parent = StatusRow
 
 local ServerStatus = Instance.new("TextLabel")
@@ -877,6 +994,7 @@ ServerStatus.TextColor3 = Color3.fromRGB(45, 220, 135)
 ServerStatus.TextSize = 16
 ServerStatus.Font = Enum.Font.GothamBold
 ServerStatus.TextXAlignment = Enum.TextXAlignment.Right
+ServerStatus.ZIndex = 405
 ServerStatus.Parent = StatusRow
 
 local ServerText = Instance.new("TextLabel")
@@ -888,12 +1006,14 @@ ServerText.TextColor3 = Color3.fromRGB(145, 153, 155)
 ServerText.TextSize = 10
 ServerText.Font = Enum.Font.GothamBold
 ServerText.TextXAlignment = Enum.TextXAlignment.Right
+ServerText.ZIndex = 405
 ServerText.Parent = StatusRow
 
 local HopRow = Instance.new("Frame")
 HopRow.Size = UDim2.new(1, -20, 0, 55)
 HopRow.BackgroundColor3 = Color3.fromRGB(26, 34, 37)
 HopRow.BorderSizePixel = 0
+HopRow.ZIndex = 404
 HopRow.Parent = settingsPage
 
 local HopRowCorner = Instance.new("UICorner")
@@ -910,6 +1030,7 @@ HopBtn.TextColor3 = Color3.fromRGB(245, 250, 255)
 HopBtn.TextSize = 15
 HopBtn.Font = Enum.Font.GothamBold
 HopBtn.AutoButtonColor = false
+HopBtn.ZIndex = 405
 HopBtn.Parent = HopRow
 
 local HopBtnCorner = Instance.new("UICorner")
@@ -1086,11 +1207,30 @@ local function selectTab(idx)
     end
 end
 
+local function refreshCanvas()
+    task.defer(function()
+        local total = 0
+        for _, page in pairs(Pages) do
+            if page.Visible then
+                local layout = page:FindFirstChildOfClass("UIListLayout")
+                if layout then
+                    total = layout.AbsoluteContentSize.Y
+                end
+            end
+        end
+        if total <= 0 then
+            total = ContentLayout.AbsoluteContentSize.Y
+        end
+        ContentScroll.CanvasSize = UDim2.new(0, 0, 0, total + 20)
+    end)
+end
+
 local function showPage(pageName)
     for name, page in pairs(Pages) do
         page.Visible = (name == pageName)
     end
     ContentTitle.Text = pageName
+    refreshCanvas()
 end
 
 for i, data in ipairs(tabs) do
@@ -1100,6 +1240,7 @@ for i, data in ipairs(tabs) do
     Button.BorderSizePixel = 0
     Button.Text = ""
     Button.AutoButtonColor = false
+    Button.ZIndex = 402
     Button.Parent = Sidebar
 
     local Corner = Instance.new("UICorner")
@@ -1115,6 +1256,7 @@ for i, data in ipairs(tabs) do
     Icon.TextSize = 21
     Icon.Font = Enum.Font.Gotham
     Icon.TextColor3 = i == 1 and Color3.fromRGB(45, 220, 135) or Color3.fromRGB(190, 198, 200)
+    Icon.ZIndex = 403
     Icon.Parent = Button
 
     local Label = Instance.new("TextLabel")
@@ -1127,6 +1269,7 @@ for i, data in ipairs(tabs) do
     Label.Font = Enum.Font.GothamMedium
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.TextColor3 = i == 1 and Color3.fromRGB(45, 220, 135) or Color3.fromRGB(220, 225, 226)
+    Label.ZIndex = 403
     Label.Parent = Button
 
     tabRefs[i] = Button
@@ -1367,17 +1510,18 @@ Player.CharacterAdded:Connect(function()
 end)
 
 --==================================================
--- ESP PLAYER + ESP HEALTH (2 tính năng riêng)
+-- ESP PLAYER + ESP HEALTH — 1 BILLBOARD DUY NHẤT, KHÔNG CHỒNG
 --==================================================
 
 local espData = {}
+
+local ESP_BILLBOARD_OFFSET = Vector3.new(0, 3.8, 0)
 
 local function clearESPRecord(plr)
     local data = espData[plr]
     if not data then return end
     if data.highlight then pcall(function() data.highlight:Destroy() end) end
-    if data.nameBillboard then pcall(function() data.nameBillboard:Destroy() end) end
-    if data.healthBillboard then pcall(function() data.healthBillboard:Destroy() end) end
+    if data.billboard then pcall(function() data.billboard:Destroy() end) end
     espData[plr] = nil
 end
 
@@ -1397,7 +1541,7 @@ local function buildESP(plr)
     end
     if espData[plr] then return end
 
-    -- Highlight (ESP Player)
+    -- Highlight
     local hl = Instance.new("Highlight")
     hl.Name = "PhuHubHL"
     hl.FillColor = Color3.fromRGB(255, 50, 50)
@@ -1409,64 +1553,70 @@ local function buildESP(plr)
     hl.Parent = char
     hl.Enabled = toggleStates["ESP Player"]
 
-    -- Name billboard (ESP Player)
-    local nameBB = Instance.new("BillboardGui")
-    nameBB.Name = "PhuHubNameBB"
-    nameBB.Size = UDim2.fromOffset(180, 42)
-    nameBB.StudsOffset = Vector3.new(0, 3.2, 0)
-    nameBB.AlwaysOnTop = true
-    nameBB.Adornee = head
-    nameBB.Enabled = toggleStates["ESP Player"]
-    nameBB.Parent = char
+    -- 1 BillboardGui duy nhất chứa cả name + HP
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "PhuHubBB"
+    bb.Size = UDim2.fromOffset(180, 78)
+    bb.StudsOffset = ESP_BILLBOARD_OFFSET
+    bb.AlwaysOnTop = true
+    bb.LightInfluence = 0
+    bb.Adornee = head
+    bb.Parent = char
 
+    -- Tên
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(1, 0, 0, 18)
+    nameLabel.Position = UDim2.fromOffset(0, 0)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = plr.DisplayName
     nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     nameLabel.TextSize = 13
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Parent = nameBB
+    nameLabel.Visible = toggleStates["ESP Player"]
+    nameLabel.Parent = bb
 
+    -- @username
     local userLabel = Instance.new("TextLabel")
-    userLabel.Size = UDim2.new(1, 0, 0, 14)
-    userLabel.Position = UDim2.fromOffset(0, 19)
+    userLabel.Name = "UserLabel"
+    userLabel.Size = UDim2.new(1, 0, 0, 13)
+    userLabel.Position = UDim2.fromOffset(0, 18)
     userLabel.BackgroundTransparency = 1
     userLabel.Text = "@" .. plr.Name
     userLabel.TextColor3 = Color3.fromRGB(190, 198, 200)
     userLabel.TextStrokeTransparency = 0.2
+    userLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     userLabel.TextSize = 10
     userLabel.Font = Enum.Font.Gotham
-    userLabel.Parent = nameBB
+    userLabel.Visible = toggleStates["ESP Player"]
+    userLabel.Parent = bb
 
+    -- Distance
     local distLabel = Instance.new("TextLabel")
+    distLabel.Name = "DistLabel"
     distLabel.Size = UDim2.new(1, 0, 0, 13)
-    distLabel.Position = UDim2.fromOffset(0, 32)
+    distLabel.Position = UDim2.fromOffset(0, 31)
     distLabel.BackgroundTransparency = 1
     distLabel.Text = "0m"
     distLabel.TextColor3 = Color3.fromRGB(45, 220, 135)
     distLabel.TextStrokeTransparency = 0.3
+    distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     distLabel.TextSize = 10
     distLabel.Font = Enum.Font.GothamSemibold
-    distLabel.Parent = nameBB
+    distLabel.Visible = toggleStates["ESP Player"]
+    distLabel.Parent = bb
 
-    -- Health billboard (ESP Health) — NHỎ
-    local hpBB = Instance.new("BillboardGui")
-    hpBB.Name = "PhuHubHealthBB"
-    hpBB.Size = UDim2.fromOffset(110, 24)
-    hpBB.StudsOffset = Vector3.new(0, 2.2, 0)
-    hpBB.AlwaysOnTop = true
-    hpBB.Adornee = head
-    hpBB.Enabled = toggleStates["ESP Health"]
-    hpBB.Parent = char
-
+    -- HP bar (nhỏ)
     local hpBack = Instance.new("Frame")
-    hpBack.Size = UDim2.new(1, -10, 0, 6)
-    hpBack.Position = UDim2.fromOffset(5, 4)
+    hpBack.Name = "HPBack"
+    hpBack.Size = UDim2.new(1, -40, 0, 6)
+    hpBack.Position = UDim2.new(0, 20, 0, 46)
     hpBack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     hpBack.BorderSizePixel = 0
-    hpBack.Parent = hpBB
+    hpBack.Visible = toggleStates["ESP Health"]
+    hpBack.Parent = bb
 
     local hpBackCorner = Instance.new("UICorner")
     hpBackCorner.CornerRadius = UDim.new(1, 0)
@@ -1479,6 +1629,7 @@ local function buildESP(plr)
     hpBackStroke.Parent = hpBack
 
     local hpFill = Instance.new("Frame")
+    hpFill.Name = "HPFill"
     hpFill.Size = UDim2.new(1, 0, 1, 0)
     hpFill.BackgroundColor3 = Color3.fromRGB(45, 220, 135)
     hpFill.BorderSizePixel = 0
@@ -1488,9 +1639,11 @@ local function buildESP(plr)
     hpFillCorner.CornerRadius = UDim.new(1, 0)
     hpFillCorner.Parent = hpFill
 
+    -- HP text
     local hpText = Instance.new("TextLabel")
-    hpText.Size = UDim2.new(1, 0, 0, 12)
-    hpText.Position = UDim2.fromOffset(0, 11)
+    hpText.Name = "HPText"
+    hpText.Size = UDim2.new(1, 0, 0, 13)
+    hpText.Position = UDim2.fromOffset(0, 54)
     hpText.BackgroundTransparency = 1
     hpText.Text = "100%"
     hpText.TextColor3 = Color3.fromRGB(240, 245, 245)
@@ -1498,19 +1651,23 @@ local function buildESP(plr)
     hpText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     hpText.TextSize = 10
     hpText.Font = Enum.Font.GothamBold
-    hpText.Parent = hpBB
+    hpText.Visible = toggleStates["ESP Health"]
+    hpText.Parent = bb
+
+    -- Bật/tắt billboard dựa theo 2 toggle
+    bb.Enabled = toggleStates["ESP Player"] or toggleStates["ESP Health"]
 
     espData[plr] = {
         character = char,
         humanoid = hum,
         highlight = hl,
-        nameBillboard = nameBB,
-        healthBillboard = hpBB,
+        billboard = bb,
         hpFill = hpFill,
         hpText = hpText,
         nameLabel = nameLabel,
         userLabel = userLabel,
         distLabel = distLabel,
+        hpBack = hpBack,
     }
 end
 
@@ -1535,11 +1692,8 @@ local function refreshESP(plr, data)
     if data.highlight then
         data.highlight.Adornee = char
     end
-    if data.nameBillboard and data.nameBillboard.Adornee ~= head then
-        data.nameBillboard.Adornee = head
-    end
-    if data.healthBillboard and data.healthBillboard.Adornee ~= head then
-        data.healthBillboard.Adornee = head
+    if data.billboard and data.billboard.Adornee ~= head then
+        data.billboard.Adornee = head
     end
 
     if data.nameLabel then
@@ -1606,11 +1760,23 @@ RunService.RenderStepped:Connect(function()
             if data.highlight then
                 data.highlight.Enabled = espPlayerOn
             end
-            if data.nameBillboard then
-                data.nameBillboard.Enabled = espPlayerOn
+            if data.billboard then
+                data.billboard.Enabled = espPlayerOn or espHealthOn
             end
-            if data.healthBillboard then
-                data.healthBillboard.Enabled = espHealthOn
+            if data.nameLabel then
+                data.nameLabel.Visible = espPlayerOn
+            end
+            if data.userLabel then
+                data.userLabel.Visible = espPlayerOn
+            end
+            if data.distLabel then
+                data.distLabel.Visible = espPlayerOn
+            end
+            if data.hpBack then
+                data.hpBack.Visible = espHealthOn
+            end
+            if data.hpText then
+                data.hpText.Visible = espHealthOn
             end
 
             if espPlayerOn or espHealthOn then
@@ -1624,15 +1790,20 @@ task.spawn(function()
     while true do
         task.wait(0.3)
 
-        if toggleStates["ESP Player"] or toggleStates["ESP Health"] then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= Player then
-                    local data = espData[plr]
-                    if not data or data.character ~= plr.Character then
-                        buildESP(plr)
+        local ok, err = pcall(function()
+            if toggleStates["ESP Player"] or toggleStates["ESP Health"] then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= Player then
+                        local data = espData[plr]
+                        if not data or data.character ~= plr.Character then
+                            buildESP(plr)
+                        end
                     end
                 end
             end
+        end)
+        if not ok then
+            warn("[PHÚ HUB] ESP loop error: " .. tostring(err))
         end
     end
 end)
@@ -1724,27 +1895,33 @@ local function startAutoKill()
     if autoKillRunning then return end
     autoKillRunning = true
     spawn(function()
-        equipAnyTool()
+        pcall(equipAnyTool)
         while autoKillRunning and toggleStates["Auto Kill"] do
-            if autoProtecting then
-                wait(0.05)
-            else
-                local target = getNearestPlayer()
-                if target then
-                    local targetChar = target.Character
-                    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                    local targetHum = targetChar and targetChar:FindFirstChild("Humanoid")
-                    local localRoot = getLocalRoot()
-                    if targetRoot and targetHum and targetHum.Health > 0 and localRoot then
-                        local behind = -targetRoot.CFrame.LookVector * 5
-                        localRoot.CFrame = CFrame.new(targetRoot.Position + behind + Vector3.new(0, 2, 0), targetRoot.Position)
-                        localRoot.Velocity = Vector3.zero
-                        localRoot.AssemblyLinearVelocity = Vector3.zero
-                        activateCurrentTool()
-                        pcall(function() targetHum:TakeDamage(15) end)
+            local ok, err = pcall(function()
+                if autoProtecting then
+                    wait(0.05)
+                else
+                    local target = getNearestPlayer()
+                    if target then
+                        local targetChar = target.Character
+                        local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+                        local targetHum = targetChar and targetChar:FindFirstChild("Humanoid")
+                        local localRoot = getLocalRoot()
+                        if targetRoot and targetHum and targetHum.Health > 0 and localRoot then
+                            local behind = -targetRoot.CFrame.LookVector * 5
+                            localRoot.CFrame = CFrame.new(targetRoot.Position + behind + Vector3.new(0, 2, 0), targetRoot.Position)
+                            localRoot.Velocity = Vector3.zero
+                            localRoot.AssemblyLinearVelocity = Vector3.zero
+                            activateCurrentTool()
+                            pcall(function() targetHum:TakeDamage(15) end)
+                        end
                     end
+                    wait(0.02)
                 end
-                wait(0.02)
+            end)
+            if not ok then
+                warn("[PHÚ HUB] Auto Kill error: " .. tostring(err))
+                wait(0.2)
             end
         end
         autoKillRunning = false
@@ -1823,19 +2000,24 @@ local function startAutoOwnership()
     autoOwnershipRunning = true
     spawn(function()
         while autoOwnershipRunning and toggleStates["Auto Ownership Area"] do
-            if currentZone and currentZone.Parent and isRedColor(currentZone.Color)
-                and not isUnderwater(currentZone.Position) then
-            else
-                currentZone = nil
-                local zones = findRedZones()
-                if #zones > 0 then currentZone = findNearestZone(zones) end
-            end
-            if currentZone then
-                local localRoot = getLocalRoot()
-                if localRoot then
-                    localRoot.CFrame = CFrame.new(currentZone.Position + Vector3.new(0, 4, 0))
-                    localRoot.Velocity = Vector3.zero
+            local ok, err = pcall(function()
+                if currentZone and currentZone.Parent and isRedColor(currentZone.Color)
+                    and not isUnderwater(currentZone.Position) then
+                else
+                    currentZone = nil
+                    local zones = findRedZones()
+                    if #zones > 0 then currentZone = findNearestZone(zones) end
                 end
+                if currentZone then
+                    local localRoot = getLocalRoot()
+                    if localRoot then
+                        localRoot.CFrame = CFrame.new(currentZone.Position + Vector3.new(0, 4, 0))
+                        localRoot.Velocity = Vector3.zero
+                    end
+                end
+            end)
+            if not ok then
+                warn("[PHÚ HUB] Auto Ownership error: " .. tostring(err))
             end
             wait(0.02)
         end
@@ -1953,54 +2135,59 @@ local function startAutoEat()
     autoEatRunning = true
     spawn(function()
         while autoEatRunning and toggleStates["Auto Eat"] do
-            if autoProtecting then
-                wait(0.05)
-            else
-                local localRoot = getLocalRoot()
-                if not localRoot then
-                    wait(0.2)
+            local ok, err = pcall(function()
+                if autoProtecting then
+                    wait(0.05)
                 else
-                    if not currentMeat or not currentMeat.Parent then
-                        currentMeat = nil
-                        local meats = findMeats()
-                        if #meats > 0 then
-                            currentMeat = findNearestMeat(meats)
-                        end
-                    end
-
-                    if currentMeat and currentMeat.Parent then
-                        localRoot.CFrame = CFrame.new(currentMeat.Position + Vector3.new(0, 2, 0))
-                        localRoot.Velocity = Vector3.zero
-
-                        local prompt = getNearestPrompt(currentMeat.Position, 30)
-                        if prompt then
-                            triggerPrompt(prompt)
+                    local localRoot = getLocalRoot()
+                    if not localRoot then
+                        wait(0.2)
+                    else
+                        if not currentMeat or not currentMeat.Parent then
+                            currentMeat = nil
+                            local meats = findMeats()
+                            if #meats > 0 then
+                                currentMeat = findNearestMeat(meats)
+                            end
                         end
 
-                        local char = Player.Character
-                        if char then
-                            for _, p in ipairs(char:GetDescendants()) do
-                                if p:IsA("BasePart") then
-                                    if type(firetouchinterest) == "function" then
-                                        pcall(firetouchinterest, p, currentMeat, 0)
-                                        pcall(firetouchinterest, p, currentMeat, 1)
+                        if currentMeat and currentMeat.Parent then
+                            localRoot.CFrame = CFrame.new(currentMeat.Position + Vector3.new(0, 2, 0))
+                            localRoot.Velocity = Vector3.zero
+
+                            local prompt = getNearestPrompt(currentMeat.Position, 30)
+                            if prompt then
+                                triggerPrompt(prompt)
+                            end
+
+                            local char = Player.Character
+                            if char then
+                                for _, p in ipairs(char:GetDescendants()) do
+                                    if p:IsA("BasePart") then
+                                        if type(firetouchinterest) == "function" then
+                                            pcall(firetouchinterest, p, currentMeat, 0)
+                                            pcall(firetouchinterest, p, currentMeat, 1)
+                                        end
                                     end
                                 end
                             end
-                        end
 
-                        for _, d in ipairs(currentMeat:GetDescendants()) do
-                            if d:IsA("ClickDetector") then
-                                if type(fireclickdetector) == "function" then
-                                    pcall(fireclickdetector, d)
+                            for _, d in ipairs(currentMeat:GetDescendants()) do
+                                if d:IsA("ClickDetector") then
+                                    if type(fireclickdetector) == "function" then
+                                        pcall(fireclickdetector, d)
+                                    end
                                 end
                             end
-                        end
 
-                        pressKey(Enum.KeyCode.E)
+                            pressKey(Enum.KeyCode.E)
+                        end
                     end
+                    wait(0.05)
                 end
-                wait(0.05)
+            end)
+            if not ok then
+                warn("[PHÚ HUB] Auto Eat error: " .. tostring(err))
             end
         end
         autoEatRunning = false
@@ -2075,32 +2262,37 @@ Player.CharacterAdded:Connect(function()
 end)
 
 --==================================================
--- TOGGLE MONITOR
+-- TOGGLE MONITOR (pcall wrap để không bao giờ chết)
 --==================================================
 
 spawn(function()
     while true do
         wait(0.3)
-        if toggleStates["Auto Kill"] and not autoKillRunning then
-            startAutoKill()
-        elseif not toggleStates["Auto Kill"] and autoKillRunning then
-            autoKillRunning = false
-        end
-        if toggleStates["Auto Ownership Area"] and not autoOwnershipRunning then
-            startAutoOwnership()
-        elseif not toggleStates["Auto Ownership Area"] and autoOwnershipRunning then
-            autoOwnershipRunning = false
-            currentZone = nil
-        end
-        if toggleStates["Auto Eat"] and not autoEatRunning then
-            startAutoEat()
-        elseif not toggleStates["Auto Eat"] and autoEatRunning then
-            autoEatRunning = false
-            currentMeat = nil
-        end
+        local ok, err = pcall(function()
+            if toggleStates["Auto Kill"] and not autoKillRunning then
+                startAutoKill()
+            elseif not toggleStates["Auto Kill"] and autoKillRunning then
+                autoKillRunning = false
+            end
+            if toggleStates["Auto Ownership Area"] and not autoOwnershipRunning then
+                startAutoOwnership()
+            elseif not toggleStates["Auto Ownership Area"] and autoOwnershipRunning then
+                autoOwnershipRunning = false
+                currentZone = nil
+            end
+            if toggleStates["Auto Eat"] and not autoEatRunning then
+                startAutoEat()
+            elseif not toggleStates["Auto Eat"] and autoEatRunning then
+                autoEatRunning = false
+                currentMeat = nil
+            end
 
-        if not toggleStates["Auto Protect"] and autoProtecting then
-            stopAutoProtect()
+            if not toggleStates["Auto Protect"] and autoProtecting then
+                stopAutoProtect()
+            end
+        end)
+        if not ok then
+            warn("[PHÚ HUB] Toggle monitor error: " .. tostring(err))
         end
     end
 end)
@@ -2119,6 +2311,7 @@ Gate.Position = UDim2.fromScale(0.5, 0.5)
 Gate.AnchorPoint = Vector2.new(0.5, 0.5)
 Gate.BackgroundColor3 = Color3.fromRGB(12, 17, 19)
 Gate.BorderSizePixel = 0
+Gate.ZIndex = 500
 Gate.Parent = ScreenGui
 
 local GateCorner = Instance.new("UICorner")
@@ -2138,6 +2331,7 @@ GateTitle.Text = "PHÚ ROBLOX HUB"
 GateTitle.TextColor3 = Color3.fromRGB(245, 245, 245)
 GateTitle.TextSize = 25
 GateTitle.Font = Enum.Font.GothamBold
+GateTitle.ZIndex = 501
 GateTitle.Parent = Gate
 
 local GateQuestion = Instance.new("TextLabel")
@@ -2149,6 +2343,7 @@ GateQuestion.TextColor3 = Color3.fromRGB(225, 230, 232)
 GateQuestion.TextSize = 19
 GateQuestion.Font = Enum.Font.GothamMedium
 GateQuestion.TextWrapped = true
+GateQuestion.ZIndex = 501
 GateQuestion.Parent = Gate
 
 local YesBtn = Instance.new("TextButton")
@@ -2160,6 +2355,7 @@ YesBtn.Text = "✓  RỒI"
 YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 YesBtn.TextSize = 17
 YesBtn.Font = Enum.Font.GothamBold
+YesBtn.ZIndex = 501
 YesBtn.Parent = Gate
 
 local YesCorner = Instance.new("UICorner")
@@ -2175,6 +2371,7 @@ NoBtn.Text = "✕  CHƯA"
 NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoBtn.TextSize = 17
 NoBtn.Font = Enum.Font.GothamBold
+NoBtn.ZIndex = 501
 NoBtn.Parent = Gate
 
 local NoCorner = Instance.new("UICorner")
@@ -2204,5 +2401,22 @@ NoBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
+--==================================================
+-- SAVE CONFIG LẦN ĐẦU
+--==================================================
+
+task.defer(function()
+    task.wait(1)
+    local data = {}
+    for k, v in pairs(toggleStates) do
+        data["t_" .. k] = v
+    end
+    for k, v in pairs(sliderStates) do
+        data["s_" .. k] = v
+    end
+    saveConfig(data)
+end)
+
 print("[PHÚ ROBLOX HUB] Loaded | Executor: " .. EXECUTOR_NAME .. " | Platform: " .. (IS_PC and "PC" or "Mobile"))
+print("[PHÚ ROBLOX HUB] Config: " .. CONFIG_FILE)
 print("[PHÚ ROBLOX HUB] Hotkey PC: RightCtrl / K / F1")
